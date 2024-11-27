@@ -1,12 +1,6 @@
+from django.utils.safestring import mark_safe
 from django.contrib import admin
-from .models import Order, OrderStatus
-
-
-@admin.register(OrderStatus)
-class OrderStatusAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
-    search_fields = ('name',)
-    ordering = ('name',)
+from .models import Order
 
 
 @admin.register(Order)
@@ -15,39 +9,40 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'is_cashless', 'date')
     search_fields = (
         'order_number',
-        'sender__full_name',  # Поиск по имени отправителя
-        'sender__phone_numbers__number',  # Поиск по телефону отправителя
-        'receiver__full_name',  # Поиск по имени получателя
-        'receiver__phone_numbers__number',  # Поиск по телефону получателя
+        'sender__full_name',
+        'receiver__full_name',
     )
     autocomplete_fields = ('sender', 'receiver', 'shelf')
-    readonly_fields = ('order_number', 'created_at', 'updated_at', 'date')
+    readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     fieldsets = (
         ("Основная информация", {
-            'fields': ('order_number', 'status', 'sender', 'receiver', 'shelf', 'seat_count', 'is_cashless')
+            'fields': ('order_number', 'status', 'sender', 'receiver', 'seat_count', 'comment', 'image',)
         }),
         ("Финансовые данные", {
-            'fields': ('price', 'paid_amount')
+            'fields': ('is_cashless', 'price', 'paid_amount', 'add_full_payment_button')
+        }),
+        ("Склад", {
+            'fields': ('shelf',)
         }),
         ("Дополнительно", {
-            'fields': ('comment', 'image', 'date', 'created_at', 'updated_at')
-        }),
+            'fields': ('date', 'created_at', 'updated_at')
+        })
     )
-    actions = ['mark_as_fully_paid']  # Регистрируем действие
 
-    def mark_as_fully_paid(self, request, queryset):
-        """
-        Устанавливает paid_amount равным price для выбранных заказов.
-        """
-        updated_count = 0
-        for order in queryset:
-            if order.price > order.paid_amount:
-                order.paid_amount = order.price
-                order.save()
-                updated_count += 1
-        self.message_user(
-            request,
-            f"{updated_count} заказ(а/ов) был(и) обновлён(ы) как 'Оплачено полностью'."
-        )
+    def add_full_payment_button(self, obj):
+        # Добавляем кнопку с JS
+        return mark_safe("""
+            <button type="button" class="button" style="margin-top: 10px; padding: 10px;" onclick="setFullPayment()">Оплата полностью</button>
+            <script>
+                function setFullPayment() {{
+                    const priceField = document.getElementById('id_price');
+                    const paidAmountField = document.getElementById('id_paid_amount');
+                    if (priceField && paidAmountField) {{
+                        paidAmountField.value = priceField.value;
+                    }}
+                }}
+            </script>
+        """)
 
-    mark_as_fully_paid.short_description = "Отметить как 'Оплачено полностью'"
+    add_full_payment_button.short_description = "Оплата полностью"
+
