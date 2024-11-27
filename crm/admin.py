@@ -1,21 +1,23 @@
 from django.contrib import admin
 from .models import Client, PhoneNumber
 
+
 class PhoneNumberInline(admin.TabularInline):
     model = PhoneNumber
-    extra = 1  # Количество пустых строк для добавления
-    verbose_name = "Номер телефона"
-    verbose_name_plural = "Номера телефонов"
+    extra = 1
+    min_num = 1
+
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'phone_numbers', 'created_at', 'updated_at')  # Поля, отображаемые в списке
-    search_fields = ('full_name', 'phone_numbers__number')  # Поиск по ФИО и номерам телефонов
-    list_filter = ('created_at', 'updated_at')  # Фильтры по дате
-    inlines = [PhoneNumberInline]  # Включение номеров телефонов в клиентскую форму
+    list_display = ('full_name', 'get_phone_numbers', 'created_at', 'updated_at')
+    search_fields = ('full_name', 'phone_numbers__number')  # Поиск по имени и номеру телефона
+    inlines = [PhoneNumberInline]
+    ordering = ('-created_at',)
 
-    def phone_numbers(self, obj):
-        """Возвращает все номера телефонов клиента."""
-        return ", ".join([phone.number for phone in obj.phone_numbers.all()])
-    phone_numbers.short_description = "Номера телефонов"
 
+@admin.register(PhoneNumber)
+class PhoneNumberAdmin(admin.ModelAdmin):
+    list_display = ('number', 'client')
+    search_fields = ('number', 'client__full_name')
+    ordering = ('number',)

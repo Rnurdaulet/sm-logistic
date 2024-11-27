@@ -39,7 +39,7 @@ class Order(models.Model):
     seat_count = models.PositiveIntegerField("Количество мест")
     is_cashless = models.BooleanField("Безналичный расчёт", default=False)
     price = models.DecimalField("Цена", max_digits=10, decimal_places=2)
-    paid_amount = models.DecimalField("Оплачено", max_digits=10, decimal_places=2, default=0.00)
+    paid_amount = models.DecimalField("Оплачено", max_digits=10, decimal_places=2)
     comment = models.TextField("Комментарий", blank=True, null=True)
     image = models.ImageField("Фото", upload_to="orders/photos/", blank=True, null=True)
     date = models.DateTimeField("Дата", auto_now_add=True)
@@ -52,11 +52,13 @@ class Order(models.Model):
         ordering = ['-date']
 
     def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)  # Сохраняем объект, чтобы получить ID
+
         if not self.order_number:
-            # Генерация уникального номера заказа
-            unique_id = uuid.uuid4().hex[:6].upper()
-            self.order_number = f"ORD-{self.created_at.strftime('%Y%m%d')}-{unique_id}" if self.created_at else f"ORD-{unique_id}"
-        super().save(*args, **kwargs)
+            # Генерация уникального номера заказа с использованием ID
+            unique_id = str(self.id).zfill(4)  # Приводим ID к формату с 6 символами (например, 000001)
+            self.order_number = f"{self.created_at.strftime('%d%m')}-{unique_id}"
+            super().save(*args, **kwargs)  # Повторное сохранение с обновлённым номером заказа
 
     def __str__(self):
         return f"Заказ №{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"
