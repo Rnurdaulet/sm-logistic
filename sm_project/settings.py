@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'warehouse',
     'crm',
-    'orders'
+    'orders',
+    'trucks'
 ]
 
 MIDDLEWARE = [

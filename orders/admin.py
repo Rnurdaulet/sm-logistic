@@ -9,8 +9,10 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'is_cashless', 'date')
     search_fields = (
         'order_number',
-        'sender__full_name',
-        'receiver__full_name',
+        'sender__full_name',  # Поиск по имени отправителя
+        'sender__phone_numbers__number',  # Поиск по телефону отправителя
+        'receiver__full_name',  # Поиск по имени получателя
+        'receiver__phone_numbers__number',  # Поиск по телефону получателя
     )
     autocomplete_fields = ('sender', 'receiver', 'shelf')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
