@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from crm.models import Client
+from trucks.models import Route
 from warehouse.models import Shelf
 
 
@@ -33,6 +34,14 @@ class Order(models.Model):
         on_delete=models.SET_NULL,
         related_name="orders",
         verbose_name="Полка",
+        null=True,
+        blank=True
+    )
+    route = models.ForeignKey(
+        Route,
+        on_delete=models.CASCADE,
+        related_name="orders",
+        verbose_name="Маршрут",
         null=True,
         blank=True
     )

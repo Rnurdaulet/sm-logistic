@@ -14,7 +14,7 @@ class OrderAdmin(admin.ModelAdmin):
         'receiver__full_name',  # Поиск по имени получателя
         'receiver__phone_numbers__number',  # Поиск по телефону получателя
     )
-    autocomplete_fields = ('sender', 'receiver', 'shelf')
+    autocomplete_fields = ('sender', 'receiver', 'shelf','route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     fieldsets = (
         ("Основная информация", {
@@ -22,6 +22,9 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         ("Финансовые данные", {
             'fields': ('is_cashless', 'price', 'paid_amount', 'add_full_payment_button')
+        }),
+        ("Фура", {
+            'fields': ('route',)
         }),
         ("Склад", {
             'fields': ('shelf',)
