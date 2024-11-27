@@ -5,6 +5,41 @@ from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
 
 
+def filtered_orders_by_route(request, route_id):
+    from trucks.models import Route
+    route = Route.objects.get(pk=route_id)
+    url, title = get_filtered_orders_url(route, "route", "admin:orders_order_changelist", "Заказы для маршрута")
+    return redirect_with_custom_title(request, url, title)
+
+
+def filtered_orders_by_area(request, area_id):
+    from warehouse.models import Area
+    area = Area.objects.get(pk=area_id)
+    url, title = get_filtered_orders_url(area, "shelf__sector__area", "admin:orders_order_changelist", "Заказы для области")
+    return redirect_with_custom_title(request, url, title)
+
+
+def filtered_orders_by_shelf(request, shelf_id):
+    from warehouse.models import Shelf
+    shelf = Shelf.objects.get(pk=shelf_id)
+    url, title = get_filtered_orders_url(shelf, "shelf", "admin:orders_order_changelist", "Заказы для полки")
+    return redirect_with_custom_title(request, url, title)
+
+
+def filtered_orders_by_sector(request, sector_id):
+    from warehouse.models import Sector
+    sector = Sector.objects.get(pk=sector_id)
+    url, title = get_filtered_orders_url(sector, "shelf__sector", "admin:orders_order_changelist", "Заказы для сектора")
+    return redirect_with_custom_title(request, url, title)
+
+
+def filtered_orders_by_warehouse(request, warehouse_id):
+    from warehouse.models import Warehouse
+    warehouse = Warehouse.objects.get(pk=warehouse_id)
+    url, title = get_filtered_orders_url(warehouse, "shelf__sector__area__warehouse", "admin:orders_order_changelist", "Заказы для склада")
+    return redirect_with_custom_title(request, url, title)
+
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_number', 'status', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
@@ -22,43 +57,13 @@ class OrderAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
-            path('by-route/<int:route_id>/', self.admin_site.admin_view(self.filtered_orders_by_route), name='orders_by_route'),
-            path('by-warehouse/<int:warehouse_id>/', self.admin_site.admin_view(self.filtered_orders_by_warehouse), name='orders_by_warehouse'),
-            path('by-area/<int:area_id>/', self.admin_site.admin_view(self.filtered_orders_by_area), name='orders_by_area'),
-            path('by-sector/<int:sector_id>/', self.admin_site.admin_view(self.filtered_orders_by_sector), name='orders_by_sector'),
-            path('by-shelf/<int:shelf_id>/', self.admin_site.admin_view(self.filtered_orders_by_shelf), name='orders_by_shelf'),
+            path('by-route/<int:route_id>/', self.admin_site.admin_view(filtered_orders_by_route), name='orders_by_route'),
+            path('by-warehouse/<int:warehouse_id>/', self.admin_site.admin_view(filtered_orders_by_warehouse), name='orders_by_warehouse'),
+            path('by-area/<int:area_id>/', self.admin_site.admin_view(filtered_orders_by_area), name='orders_by_area'),
+            path('by-sector/<int:sector_id>/', self.admin_site.admin_view(filtered_orders_by_sector), name='orders_by_sector'),
+            path('by-shelf/<int:shelf_id>/', self.admin_site.admin_view(filtered_orders_by_shelf), name='orders_by_shelf'),
         ]
         return custom_urls + urls
-
-    def filtered_orders_by_route(self, request, route_id):
-        from trucks.models import Route
-        route = Route.objects.get(pk=route_id)
-        url, title = get_filtered_orders_url(route, "route", "admin:orders_order_changelist", "Заказы для маршрута")
-        return redirect_with_custom_title(request, url, title)
-
-    def filtered_orders_by_warehouse(self, request, warehouse_id):
-        from warehouse.models import Warehouse
-        warehouse = Warehouse.objects.get(pk=warehouse_id)
-        url, title = get_filtered_orders_url(warehouse, "shelf__sector__area__warehouse", "admin:orders_order_changelist", "Заказы для склада")
-        return redirect_with_custom_title(request, url, title)
-
-    def filtered_orders_by_area(self, request, area_id):
-        from warehouse.models import Area
-        area = Area.objects.get(pk=area_id)
-        url, title = get_filtered_orders_url(area, "shelf__sector__area", "admin:orders_order_changelist", "Заказы для области")
-        return redirect_with_custom_title(request, url, title)
-
-    def filtered_orders_by_sector(self, request, sector_id):
-        from warehouse.models import Sector
-        sector = Sector.objects.get(pk=sector_id)
-        url, title = get_filtered_orders_url(sector, "shelf__sector", "admin:orders_order_changelist", "Заказы для сектора")
-        return redirect_with_custom_title(request, url, title)
-
-    def filtered_orders_by_shelf(self, request, shelf_id):
-        from warehouse.models import Shelf
-        shelf = Shelf.objects.get(pk=shelf_id)
-        url, title = get_filtered_orders_url(shelf, "shelf", "admin:orders_order_changelist", "Заказы для полки")
-        return redirect_with_custom_title(request, url, title)
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}

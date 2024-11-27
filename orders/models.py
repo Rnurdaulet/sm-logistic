@@ -1,8 +1,11 @@
 import uuid
+from io import BytesIO
 from django.db import models
 from crm.models import Client
 from trucks.models import Route
 from warehouse.models import Shelf
+from PIL import Image
+from django.core.files.base import ContentFile
 
 
 class OrderStatus(models.Model):
@@ -69,6 +72,50 @@ class Order(models.Model):
             self.order_number = f"{self.created_at.strftime('%d%m')}-{unique_id}"
             super().save(*args, **kwargs)  # Повторное сохранение с обновлённым номером заказа
 
+        # Обработка изображения
+        if self.image:
+            self.optimize_image()
+
+    def optimize_image(self):
+        from pathlib import Path  # Для безопасной работы с путями
+
+        # Открываем изображение
+        img = Image.open(self.image)
+
+        # Удаляем метаданные
+        img = img.copy()
+
+        # Получаем текущий формат изображения
+        image_format = img.format or 'JPEG'
+        valid_formats = ['JPEG', 'PNG', 'WEBP']
+        if image_format not in valid_formats:
+            raise ValueError(f"Unsupported image format: {image_format}")
+
+        # Меняем размер до ширины 720px с сохранением пропорций
+        max_width = 720
+        if img.width > max_width:
+            new_height = int((max_width / img.width) * img.height)
+            img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+
+        # Подготовка к оптимизации
+        buffer = BytesIO()
+        save_params = {"format": image_format, "optimize": True}
+        if image_format == "JPEG":
+            save_params["quality"] = 85  # Устанавливаем качество для JPEG
+
+        # Сохраняем изображение в памяти
+        img.save(buffer, **save_params)
+        buffer.seek(0)
+
+        # Сохраняем имя оригинального файла для удаления
+        original_file_path = Path(self.image.path)
+
+        # Перезаписываем файл изображения
+        self.image.save(self.image.name, ContentFile(buffer.read()), save=False)
+
+        # Удаляем оригинальный файл
+        if original_file_path.exists():
+            original_file_path.unlink()
+
     def __str__(self):
         return f"Заказ №{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"
-
