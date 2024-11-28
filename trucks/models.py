@@ -6,6 +6,11 @@ class Truck(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название фуры")
     plate_number = models.CharField(max_length=20, unique=True, verbose_name="Госномер")
 
+    class Meta:
+        verbose_name = "Фура"
+        verbose_name_plural = "Фуры"
+        ordering = ['name']  # Сортировка по имени фуры
+
     def __str__(self):
         return f"{self.name} ({self.plate_number})"
 
@@ -19,7 +24,12 @@ class Route(models.Model):
         ('completed', 'Завершен'),
     ]
 
-    truck = models.ForeignKey(Truck, on_delete=models.CASCADE, verbose_name="Фура")
+    truck = models.ForeignKey(
+        Truck,
+        on_delete=models.CASCADE,
+        related_name="routes",
+        verbose_name="Фура"
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
@@ -36,13 +46,20 @@ class Route(models.Model):
         verbose_name="Уникальный номер"
     )
 
+    class Meta:
+        verbose_name = "Маршрут"
+        verbose_name_plural = "Маршруты"
+        ordering = ['-created_at']  # Сортировка по дате создания
+
     def save(self, *args, **kwargs):
-        # Генерация уникального номера, если он не задан
+        """
+        Генерация уникального номера маршрута, если он отсутствует.
+        Формат: {Название фуры}-{ДеньМесяц}-{ID}
+        """
         if not self.unique_number:
             current_date = now()
             day = current_date.strftime('%d')
             month = current_date.strftime('%m')
-            temp_unique_number = f"{self.truck.name}-{day}{month}-{self.id or ''}"
             super().save(*args, **kwargs)  # Сохранение для получения ID
             self.unique_number = f"{self.truck.name}-{day}{month}-{self.id}"
             super().save(update_fields=['unique_number'])

@@ -8,6 +8,11 @@ class Client(models.Model):
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)
 
+    class Meta:
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
+        ordering = ['-created_at']  # Сортировка по умолчанию: по дате создания
+
     def __str__(self):
         return self.full_name
 
@@ -17,10 +22,22 @@ class Client(models.Model):
         """
         return ", ".join(phone.number for phone in self.phone_numbers.all())
 
+    get_phone_numbers.short_description = "Номера телефонов"  # Описание для админки
+
 
 class PhoneNumber(models.Model):
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="phone_numbers", verbose_name="Клиент")
+    client = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name="phone_numbers",
+        verbose_name="Клиент"
+    )
     number = models.CharField("Номер телефона", max_length=20, unique=True)
+
+    class Meta:
+        verbose_name = "Номер телефона"
+        verbose_name_plural = "Номера телефонов"
+        ordering = ['number']  # Сортировка по номеру телефона
 
     def __str__(self):
         return self.number
@@ -32,8 +49,8 @@ class PhoneNumber(models.Model):
         phone_pattern = r'^\+?\d{10,15}$'  # Пример: +77001234567
         if not re.match(phone_pattern, self.number):
             raise ValidationError("Номер телефона должен содержать только цифры и может начинаться с '+'.")
-        # Пример преобразования к стандартному формату
-        self.number = self.number.replace(" ", "").replace("-", "")
+        # Убираем пробелы и дефисы для стандартизации формата
+        self.number = re.sub(r"[ \-]", "", self.number)
 
     def save(self, *args, **kwargs):
         """
