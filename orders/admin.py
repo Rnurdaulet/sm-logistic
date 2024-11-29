@@ -2,44 +2,38 @@ from django.contrib import admin
 from django.urls import path
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
-from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter
+from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter
 
-from .models import Order, OrderStatus
+from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
 
 
 # Вспомогательные функции для фильтрации
-def get_filtered_orders(request, model_cls, field, model_id, title_prefix, admin_url):
-    obj = model_cls.objects.get(pk=model_id)
-    url, title = get_filtered_orders_url(obj, field, admin_url, f"{title_prefix} для {obj}")
+def get_filtered_orders(request, field, value, title_prefix, admin_url):
+    url, title = get_filtered_orders_url(value, field, admin_url, f"{title_prefix} для {value}")
     return redirect_with_custom_title(request, url, title)
 
 
 # Custom view-функции для фильтрации
 def filtered_orders_by_route(request, route_id):
-    from trucks.models import Route
-    return get_filtered_orders(request, Route, "route", route_id, "Заказы", "admin:orders_order_changelist")
+    return get_filtered_orders(request, "route_id", route_id, "Заказы", "admin:orders_order_changelist")
 
 
 def filtered_orders_by_warehouse(request, warehouse_id):
-    from warehouse.models import Warehouse
-    return get_filtered_orders(request, Warehouse, "shelf__sector__area__warehouse", warehouse_id, "Заказы",
+    return get_filtered_orders(request, "shelf__sector__area__warehouse_id", warehouse_id, "Заказы",
                                "admin:orders_order_changelist")
 
 
 def filtered_orders_by_area(request, area_id):
-    from warehouse.models import Area
-    return get_filtered_orders(request, Area, "shelf__sector__area", area_id, "Заказы", "admin:orders_order_changelist")
+    return get_filtered_orders(request, "shelf__sector__area_id", area_id, "Заказы", "admin:orders_order_changelist")
 
 
 def filtered_orders_by_sector(request, sector_id):
-    from warehouse.models import Sector
-    return get_filtered_orders(request, Sector, "shelf__sector", sector_id, "Заказы", "admin:orders_order_changelist")
+    return get_filtered_orders(request, "shelf__sector_id", sector_id, "Заказы", "admin:orders_order_changelist")
 
 
 def filtered_orders_by_shelf(request, shelf_id):
-    from warehouse.models import Shelf
-    return get_filtered_orders(request, Shelf, "shelf", shelf_id, "Заказы", "admin:orders_order_changelist")
+    return get_filtered_orders(request, "shelf_id", shelf_id, "Заказы", "admin:orders_order_changelist")
 
 
 # Админка OrderAdmin
@@ -48,8 +42,14 @@ class OrderAdmin(ModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
-    list_display = ('order_number', 'status', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
-    list_filter = (("status", RelatedDropdownFilter), 'is_cashless', 'date', 'shelf', 'shelf__sector__area__warehouse')
+    date_hierarchy = "date"
+    list_display = ('order_number', 'get_status_display', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
+    list_filter = (
+        ("status", ChoicesDropdownFilter),
+        'is_cashless',
+        ("date", RangeDateFilter),
+        ('shelf', RelatedDropdownFilter),
+    )
     search_fields = (
         'order_number',
         'sender__full_name',
@@ -110,28 +110,17 @@ class OrderAdmin(ModelAdmin):
         """
         Кнопка для установки полной оплаты.
         """
-        return mark_safe("""
+        return mark_safe(f"""
             <button type="button" class="bg-primary-600 block border border-transparent font-medium px-3 py-2 rounded-md text-white w-full lg:w-auto" style="margin-top: 10px; padding: 10px;" onclick="setFullPayment()">Оплата полностью</button>
             <script>
-                function setFullPayment() {
+                function setFullPayment() {{
                     const priceField = document.getElementById('id_price');
                     const paidAmountField = document.getElementById('id_paid_amount');
-                    if (priceField && paidAmountField) {
+                    if (priceField && paidAmountField) {{
                         paidAmountField.value = priceField.value;
-                    }
-                }
+                    }}
+                }}
             </script>
         """)
 
     add_full_payment_button.short_description = "Оплата полностью"
-
-
-@admin.register(OrderStatus)
-class OrderStatusAdmin(ModelAdmin):
-    """
-    Админка для модели статусов заказа.
-    """
-    list_display = ('name', 'description')  # Отображаемые поля в списке
-    search_fields = ('name', 'description')  # Поиск по имени и описанию
-    ordering = ('name',)  # Сортировка по имени
-    list_filter = ('name',)  # Фильтр по имени
