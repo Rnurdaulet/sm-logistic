@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'orders',
     'trucks',
     "simple_history",
+    'image_optimizer',
 ]
 
 MIDDLEWARE = [
@@ -166,6 +167,9 @@ DATETIME_INPUT_FORMATS = [
     "%m/%d/%y %H:%M:%S.%f",  # '10/25/06 14:30:59.000200'
     "%m/%d/%y %H:%M",  # '10/25/06 14:30'
 ]
+
+# Для использования Pillow
+OPTIMIZED_IMAGE_METHOD = 'pillow'
 
 
 ######################################################################

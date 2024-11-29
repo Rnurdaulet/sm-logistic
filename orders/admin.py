@@ -6,6 +6,7 @@ from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownF
 
 from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
+from .resources import OrderResource
 
 
 # Вспомогательные функции для фильтрации
@@ -42,7 +43,8 @@ class OrderAdmin(ModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
-    date_hierarchy = "date"
+    resource_class = OrderResource
+    # date_hierarchy = "date"
     list_display = ('order_number', 'get_status_display', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
     list_filter = (
         ("status", ChoicesDropdownFilter),
