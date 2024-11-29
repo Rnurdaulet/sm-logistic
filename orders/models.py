@@ -82,7 +82,7 @@ class Order(models.Model):
             unique_id = str(self.id).zfill(4)
             creation_date = self.created_at or timezone.now()
             self.created_at = creation_date  # Устанавливаем дату создания, если не задана
-            self.order_number = f"{creation_date.strftime('%d%m')}-{unique_id}"
+            self.order_number = f"{creation_date.strftime('%d%m%y')}-{unique_id}"
             super().save(update_fields=['order_number'])
 
         # Если объект уже существующий, сохраняем его как обычно

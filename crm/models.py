@@ -14,7 +14,8 @@ class Client(models.Model):
         ordering = ['-created_at']  # Сортировка по умолчанию: по дате создания
 
     def __str__(self):
-        return self.full_name
+        phone_list = ", ".join([phone.number for phone in self.phone_numbers.all()])
+        return f"{self.full_name} ({phone_list})"
 
     def get_phone_numbers(self):
         """

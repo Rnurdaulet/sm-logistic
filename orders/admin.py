@@ -50,15 +50,20 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
     """
     resource_class = OrderResource
     import_form_class = ImportForm
-    export_form_class = ExportForm
+    export_form_class = SelectableFieldsExportForm
     date_hierarchy = "date"
+
+    autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
+    readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     list_display = ('order_number', 'get_status_display', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
+
     list_filter = (
         ("status", ChoicesDropdownFilter),
         'is_cashless',
         ("date", RangeDateFilter),
         ('shelf', RelatedDropdownFilter),
     )
+
     search_fields = (
         'order_number',
         'sender__full_name',
@@ -66,10 +71,11 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
         'receiver__full_name',
         'receiver__phone_numbers__number',
     )
-    autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
-    readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
 
     fieldsets = (
+        ("Маршрут", {
+            'fields': ('route',)
+        }),
         ("Основная информация", {
             'fields': ('order_number', 'status', 'sender', 'receiver', 'image', 'comment')
         }),
@@ -78,9 +84,6 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
         }),
         ("Склад", {
             'fields': ('shelf',)
-        }),
-        ("Маршрут", {
-            'fields': ('route',)
         }),
         ("Дополнительно", {
             'fields': ('date', 'created_at', 'updated_at',),
