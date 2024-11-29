@@ -54,13 +54,6 @@ class Order(models.Model):
     paid_amount = models.DecimalField("Оплачено", max_digits=10, decimal_places=2)
     comment = models.TextField("Комментарий", blank=True, null=True)
     image = models.ImageField("Фото", upload_to="orders/photos/", blank=True, null=True)
-    # image = OptimizedImageField(
-    #     upload_to='orders/photos/',
-    #     optimized_image_output_size=1024,  # Опционально: размер вывода
-    #     optimized_image_resize_method='thumbnail',  # Опционально: метод изменения размера
-    #     blank=True, null=True
-    # )
-
     date = models.DateTimeField("Дата", auto_now_add=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)

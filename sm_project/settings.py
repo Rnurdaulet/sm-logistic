@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'orders',
     'trucks',
     "simple_history",
-    'image_optimizer',
+    'import_export',
 ]
 
 MIDDLEWARE = [

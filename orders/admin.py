@@ -9,6 +9,11 @@ from orders.services import get_filtered_orders_url, redirect_with_custom_title
 from .resources import OrderResource
 
 
+from import_export.admin import ImportExportModelAdmin
+from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
+
+
+
 # Вспомогательные функции для фильтрации
 def get_filtered_orders(request, field, value, title_prefix, admin_url):
     url, title = get_filtered_orders_url(value, field, admin_url, f"{title_prefix} для {value}")
@@ -39,12 +44,14 @@ def filtered_orders_by_shelf(request, shelf_id):
 
 # Админка OrderAdmin
 @admin.register(Order)
-class OrderAdmin(ModelAdmin):
+class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
     resource_class = OrderResource
-    # date_hierarchy = "date"
+    import_form_class = ImportForm
+    export_form_class = ExportForm
+    date_hierarchy = "date"
     list_display = ('order_number', 'get_status_display', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
     list_filter = (
         ("status", ChoicesDropdownFilter),
