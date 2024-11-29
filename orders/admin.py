@@ -1,9 +1,12 @@
 from django.contrib import admin
+from django.db.models import F, Q
 from django.urls import path
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+from django_filters.constants import EMPTY_VALUES
+from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin
-from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter
+from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter, TextFilter
 from unfold.decorators import display
 
 from .models import Order
@@ -13,7 +16,27 @@ from .resources import OrderResource
 from import_export.admin import ImportExportModelAdmin
 from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
 
+from django.contrib.admin import SimpleListFilter
 
+
+class PaymentStatusFilter(SimpleListFilter):
+    title = 'Статус оплаты'  # Название фильтра, которое будет отображаться в админке
+    parameter_name = 'payment_status'  # Параметр URL для фильтра
+
+    def lookups(self, request, model_admin):
+        """Возвращает параметры фильтра."""
+        return [
+            ('paid', 'Оплачено'),
+            ('unpaid', 'Остаток')
+        ]
+
+    def queryset(self, request, queryset):
+        """Фильтрует записи на основе выбранного параметра."""
+        if self.value() == 'paid':
+            return queryset.filter(price=F('paid_amount'))
+        if self.value() == 'unpaid':
+            return queryset.exclude(price=F('paid_amount'))
+        return queryset
 # Вспомогательные функции для фильтрации
 def get_filtered_orders(request, field, value, title_prefix, admin_url):
     url, title = get_filtered_orders_url(value, field, admin_url, f"{title_prefix} для {value}")
@@ -44,7 +67,7 @@ def filtered_orders_by_shelf(request, shelf_id):
 
 # Админка OrderAdmin
 @admin.register(Order)
-class OrderAdmin(ModelAdmin, ImportExportModelAdmin):
+class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
@@ -59,9 +82,10 @@ class OrderAdmin(ModelAdmin, ImportExportModelAdmin):
 
     list_filter = (
         ("status", ChoicesDropdownFilter),
-        'is_cashless',
         ("date", RangeDateFilter),
         ('shelf', RelatedDropdownFilter),
+        'is_cashless',
+        PaymentStatusFilter,
     )
 
     search_fields = (
@@ -70,6 +94,7 @@ class OrderAdmin(ModelAdmin, ImportExportModelAdmin):
         'sender__phone_numbers__number',
         'receiver__full_name',
         'receiver__phone_numbers__number',
+        'route__unique_number'
     )
 
     fieldsets = (

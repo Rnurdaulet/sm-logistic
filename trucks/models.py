@@ -67,4 +67,4 @@ class Route(models.Model):
             super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Маршрут {self.unique_number}"
+        return f"{self.unique_number}"

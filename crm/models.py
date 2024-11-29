@@ -23,8 +23,6 @@ class Client(models.Model):
         """
         return ", ".join(phone.number for phone in self.phone_numbers.all())
 
-    get_phone_numbers.short_description = "Номера телефонов"  # Описание для админки
-
 
 class PhoneNumber(models.Model):
     client = models.ForeignKey(

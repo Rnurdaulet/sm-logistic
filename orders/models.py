@@ -113,4 +113,4 @@ class Order(models.Model):
             raise ValueError(f"Ошибка оптимизации изображения: {e}")
 
     def __str__(self):
-        return f"Заказ №{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"
+        return f"№{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"
