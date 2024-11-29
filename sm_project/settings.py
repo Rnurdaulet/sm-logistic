@@ -14,6 +14,7 @@ from pathlib import Path
 
 from django.template.context_processors import static
 from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -170,6 +171,11 @@ DATETIME_INPUT_FORMATS = [
 ######################################################################
 # Unfold
 ######################################################################
+
+def permission_callback(request):
+    return request.user.has_perm("orders.view_order")
+
+
 UNFOLD = {
     "SITE_HEADER": "Saule-Marat",
     "SITE_TITLE": "Saule-Marat",
@@ -178,4 +184,51 @@ UNFOLD = {
     "LOGIN": {
         "image": lambda request: static("images/login-bg.jpg"),
     },
+    "TABS": [
+        {
+            "models": ["orders.order"],
+            "items": [
+                {
+                    "title": _("Все заказы"),
+                    "icon": "assignment",
+                    "link": reverse_lazy("admin:orders_order_changelist"),
+                },
+                {
+                    "title": _("Принятые"),
+                    "icon": "assignment_turned_in",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=accepted",
+                },
+                {
+                    "title": _("Погрузка"),
+                    "icon": "local_shipping",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=loading",
+                },
+                {
+                    "title": _("В пути"),
+                    "icon": "directions_car",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=in_transit",
+                },
+                {
+                    "title": _("Выгрузка"),
+                    "icon": "warehouse",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=unloading",
+                },
+                {
+                    "title": _("На складе"),
+                    "icon": "warehouse",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=in_warehouse",
+                },
+                {
+                    "title": _("Выданные"),
+                    "icon": "check_circle",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=completed",
+                },
+                {
+                    "title": _("Отменённые"),
+                    "icon": "cancel",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=canceled",
+                },
+            ],
+        },
+    ],
 }
