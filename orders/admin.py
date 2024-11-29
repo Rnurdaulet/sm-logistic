@@ -1,17 +1,17 @@
 from django.contrib import admin
 from django.urls import path
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter
+from unfold.decorators import display
 
 from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
 from .resources import OrderResource
 
-
 from import_export.admin import ImportExportModelAdmin
 from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
-
 
 
 # Вспомогательные функции для фильтрации
@@ -44,7 +44,7 @@ def filtered_orders_by_shelf(request, shelf_id):
 
 # Админка OrderAdmin
 @admin.register(Order)
-class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
+class OrderAdmin(ModelAdmin, ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
@@ -55,7 +55,7 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
 
     autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
-    list_display = ('order_number', 'get_status_display', 'sender', 'receiver', 'price', 'paid_amount', 'shelf')
+    list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'display_status', 'route', 'shelf')
 
     list_filter = (
         ("status", ChoicesDropdownFilter),
@@ -92,9 +92,12 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
         }),
     )
 
+    # radio_fields = {"status": admin.VERTICAL}
     list_filter_submit = True
     list_filter_sheet = False
     list_fullwidth = True
+    warn_unsaved_form = True
+    compressed_fields = True
 
     # Добавляем кастомные URL
     def get_urls(self):
@@ -136,3 +139,65 @@ class OrderAdmin(ModelAdmin,ImportExportModelAdmin):
         """)
 
     add_full_payment_button.short_description = "Оплата полностью"
+
+    @admin.display(description="Оплачено")
+    def display_payment_status(self, instance):
+        if instance.price == instance.paid_amount:
+            return instance.price
+        else:
+            return f"-{instance.price - instance.paid_amount}"
+
+    @admin.display(description="Статус")
+    def display_status(self, instance):
+        # Стили и иконки для каждого статуса
+        status_styles = {
+            'accepted': {
+                'style': "background-color: #4e79a7; color: white;",  # Спокойный синий
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">done</span>',
+            },
+            'loading': {
+                'style': "background-color: #f8c471; color: black;",  # Светло-оранжевый
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">hourglass_top</span>',
+            },
+            'in_transit': {
+                'style': "background-color: #6fbf73; color: white;",  # Нежный зелёный
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">local_shipping</span>',
+            },
+            'unloading': {
+                'style': "background-color: #b0a8b9; color: black;",  # Светло-серый с оттенком сиреневого
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">unarchive</span>',
+            },
+            'in_warehouse': {
+                'style': "background-color: #555e6c; color: white;",  # Глубокий серо-синий
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">warehouse</span>',
+            },
+            'completed': {
+                'style': "background-color: #88c0d0; color: black;",  # Пастельный голубой
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">check_circle</span>',
+            },
+            'canceled': {
+                'style': "background-color: #bf616a; color: white;",  # Мягкий красный
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cancel</span>',
+            },
+        }
+
+        # Получение стиля и иконки для текущего статуса
+        status = status_styles.get(instance.status, {
+            'style': "background-color: #d1d5db; color: black;",
+            'icon': '',
+        })
+        style_classes = status['style']
+        icon = status['icon']
+
+        # Читаемое название статуса
+        status_display = dict(Order.STATUS_CHOICES).get(instance.status, instance.status)
+
+        # Возврат HTML
+        return mark_safe(
+            f''' <div style="display: flex; align-items: center; justify-content: left; padding: 6px 6px; padding-left:10px;
+            border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px; {style_classes}">
+                {icon}
+                <span>{status_display}</span>
+            </div>
+            '''
+        )
