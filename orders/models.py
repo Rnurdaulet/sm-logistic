@@ -9,6 +9,10 @@ from PIL import Image
 from django.core.files.base import ContentFile
 from io import BytesIO
 from pathlib import Path
+import segno
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 class Order(models.Model):
@@ -54,6 +58,7 @@ class Order(models.Model):
     paid_amount = models.DecimalField("Оплачено", max_digits=10, decimal_places=2)
     comment = models.TextField("Комментарий", blank=True, null=True)
     image = models.ImageField("Фото", upload_to="orders/photos/", blank=True, null=True)
+    qr_code = models.ImageField("QR-код", upload_to="orders/qr_codes/", blank=True, null=True)
     date = models.DateTimeField("Дата", auto_now_add=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)
@@ -79,11 +84,14 @@ class Order(models.Model):
 
         # Генерация номера заказа
         if not self.order_number:
-            unique_id = str(self.id).zfill(4)
+            unique_id = Order.objects.aggregate(max_id=models.Max("id"))["max_id"] or 0
             creation_date = self.created_at or timezone.now()
             self.created_at = creation_date  # Устанавливаем дату создания, если не задана
-            self.order_number = f"{creation_date.strftime('%d%m%y')}-{unique_id}"
+            self.order_number = f"{creation_date.strftime('%d%m%y')}-{unique_id + 1:04d}"
             super().save(update_fields=['order_number'])
+
+        if not self.qr_code:
+            self.generate_and_save_qr_code()
 
         # Если объект уже существующий, сохраняем его как обычно
         if not is_new:
@@ -111,6 +119,58 @@ class Order(models.Model):
 
         except Exception as e:
             raise ValueError(f"Ошибка оптимизации изображения: {e}")
+
+    def generate_and_save_qr_code(self):
+        # Генерация QR-кода
+        qr = segno.make(f"O{self.order_number}", micro=False)
+        buffer = BytesIO()
+        qr.save(buffer, kind='png', scale=5)
+        buffer.seek(0)
+
+        # Открываем QR-код как изображение
+        qr_image = Image.open(buffer)
+
+        # Создаём текст цепочки с разделением на строки
+        text_parts = [
+            f"{self.order_number}",
+            f">{self.sender.get_first_phone_number()}",
+            f"<{self.receiver.get_first_phone_number()}"
+        ]
+
+        # Настраиваем шрифт
+        try:
+            font = ImageFont.truetype("arial.ttf", size=20)
+        except IOError:
+            font = ImageFont.load_default()
+
+        # Определяем ширину и высоту текста
+        draw = ImageDraw.Draw(qr_image)
+        text_width = max(int(draw.textbbox((0, 0), line, font=font)[2]) for line in text_parts)
+        text_height = sum(int(draw.textbbox((0, 0), line, font=font)[3]) for line in text_parts) + (
+                len(text_parts) - 1) * 5
+
+        # Создаем новое изображение, добавляя место справа для текста
+        new_width = qr_image.width + text_width + 20
+        new_height = max(qr_image.height, text_height)
+        new_image = Image.new("RGB", (new_width, new_height), "white")
+        new_image.paste(qr_image, (0, 0))
+
+        # Рисуем текст справа
+        text_x = qr_image.width + 10
+        current_y = (new_height - text_height) // 2
+        draw = ImageDraw.Draw(new_image)
+        for line in text_parts:
+            draw.text((text_x, current_y), line, fill="black", font=font)
+            current_y += int(draw.textbbox((0, 0), line, font=font)[3]) + 5
+
+        # Сохранение изображения
+        buffer = BytesIO()
+        new_image.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # Сохраняем изображение в поле qr_code
+        file_name = f"{self.order_number}_qr.png"
+        self.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=False)
 
     def __str__(self):
         return f"№{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"

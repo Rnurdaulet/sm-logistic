@@ -102,7 +102,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'fields': ('route',)
         }),
         ("Основная информация", {
-            'fields': ('order_number', 'status', 'sender', 'receiver', 'image', 'comment')
+            'fields': ('order_number',"qr_code", 'status', 'sender', 'receiver', 'image', 'comment')
         }),
         ("Детали заказа", {
             'fields': ('seat_count', 'is_cashless', 'price', 'paid_amount', 'add_full_payment_button')

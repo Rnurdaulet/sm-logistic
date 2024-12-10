@@ -23,6 +23,13 @@ class Client(models.Model):
         """
         return ", ".join(phone.number for phone in self.phone_numbers.all())
 
+    def get_first_phone_number(self):
+        """
+        Возвращает первый номер телефона клиента.
+        Если номеров нет, возвращает None или пустую строку.
+        """
+        first_phone = self.phone_numbers.first()
+        return first_phone.number if first_phone else None
 
 class PhoneNumber(models.Model):
     client = models.ForeignKey(
