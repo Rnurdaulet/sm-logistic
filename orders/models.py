@@ -70,11 +70,11 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         """
-        Сохраняет объект и оптимизирует изображение пропорционально без белых полей.
+        Сохраняет объект, оптимизирует изображение и генерирует номер заказа и QR-код.
         """
         is_new = self.pk is None
 
-        # Сохраняем объект для получения `pk`
+        # Первичное сохранение нового объекта для получения `pk`
         if is_new:
             super().save(*args, **kwargs)
 
@@ -84,16 +84,28 @@ class Order(models.Model):
 
         # Генерация номера заказа
         if not self.order_number:
-            unique_id = Order.objects.aggregate(max_id=models.Max("id"))["max_id"] or 0
             creation_date = self.created_at or timezone.now()
             self.created_at = creation_date  # Устанавливаем дату создания, если не задана
-            self.order_number = f"{creation_date.strftime('%d%m%y')}-{unique_id + 1:04d}"
-            super().save(update_fields=['order_number'])
 
+            # Получаем ID последнего заказа за текущий день
+            start_of_day = creation_date.date()
+            unique_id = (
+                    Order.objects.filter(created_at__date=start_of_day)
+                    .aggregate(max_id=models.Max("id"))["max_id"] or 0
+            )
+
+            # Формируем номер заказа
+            self.order_number = f"{creation_date.strftime('%d%m%y')}-{unique_id + 1:04d}"
+
+            # Сохраняем только поле order_number
+            super().save(update_fields=["order_number"])
+
+        # Генерация и сохранение QR-кода
         if not self.qr_code:
             self.generate_and_save_qr_code()
+            super().save(update_fields=["qr_code"])  # Сохраняем только QR-код
 
-        # Если объект уже существующий, сохраняем его как обычно
+        # Если объект не новый, сохраняем изменения как обычно
         if not is_new:
             super().save(*args, **kwargs)
 
@@ -133,8 +145,8 @@ class Order(models.Model):
         # Создаём текст цепочки с разделением на строки
         text_parts = [
             f"{self.order_number}",
-            f">{self.sender.get_first_phone_number()}",
-            f"<{self.receiver.get_first_phone_number()}"
+            f"О:{self.sender.get_first_phone_number()}",
+            f"П:{self.receiver.get_first_phone_number()}"
         ]
 
         # Настраиваем шрифт

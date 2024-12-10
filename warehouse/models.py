@@ -229,5 +229,6 @@ class Shelf(models.Model):
         file_name = f"{self.unique_id}_qr.png"
         self.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=False)
 
-
+    def __str__(self):
+        return f"{self.unique_id}"
 
