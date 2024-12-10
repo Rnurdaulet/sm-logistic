@@ -37,6 +37,8 @@ class PaymentStatusFilter(SimpleListFilter):
         if self.value() == 'unpaid':
             return queryset.exclude(price=F('paid_amount'))
         return queryset
+
+
 # Вспомогательные функции для фильтрации
 def get_filtered_orders(request, field, value, title_prefix, admin_url):
     url, title = get_filtered_orders_url(value, field, admin_url, f"{title_prefix} для {value}")
@@ -67,7 +69,7 @@ def filtered_orders_by_shelf(request, shelf_id):
 
 # Админка OrderAdmin
 @admin.register(Order)
-class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
+class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
@@ -78,14 +80,12 @@ class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
 
     autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
-    list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'display_status', 'route', 'shelf')
+    list_display = ('order_number', 'sender', 'receiver', 'display_payment_status',   'route', 'shelf','display_status',)
 
     list_filter = (
-        ("status", ChoicesDropdownFilter),
-        ("date", RangeDateFilter),
-        ('shelf', RelatedDropdownFilter),
         'is_cashless',
         PaymentStatusFilter,
+        ("date", RangeDateFilter),
     )
 
     search_fields = (
@@ -150,18 +150,11 @@ class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
         """
         Кнопка для установки полной оплаты.
         """
-        return mark_safe(f"""
-            <button type="button" class="bg-primary-600 block border border-transparent font-medium px-3 py-2 rounded-md text-white w-full lg:w-auto" style="margin-top: 10px; padding: 10px;" onclick="setFullPayment()">Оплата полностью</button>
-            <script>
-                function setFullPayment() {{
-                    const priceField = document.getElementById('id_price');
-                    const paidAmountField = document.getElementById('id_paid_amount');
-                    if (priceField && paidAmountField) {{
-                        paidAmountField.value = priceField.value;
-                    }}
-                }}
-            </script>
-        """)
+        return mark_safe(f""" <button type="button" class="bg-primary-600 block border border-transparent font-medium 
+        px-3 py-2 rounded-md text-white w-full lg:w-auto" style="margin-top: 10px; padding: 10px;" 
+        onclick="setFullPayment()">Оплата полностью</button> <script> function setFullPayment() {{ const priceField = 
+        document.getElementById('id_price'); const paidAmountField = document.getElementById('id_paid_amount'); if (
+        priceField && paidAmountField) {{ paidAmountField.value = priceField.value; }} }} </script> """)
 
     add_full_payment_button.short_description = "Оплата полностью"
 
@@ -178,31 +171,38 @@ class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
         status_styles = {
             'accepted': {
                 'style': "background-color: #4e79a7; color: white;",  # Спокойный синий
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">done</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">done</span>',
             },
             'loading': {
                 'style': "background-color: #f8c471; color: black;",  # Светло-оранжевый
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">hourglass_top</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">hourglass_top</span>',
             },
             'in_transit': {
                 'style': "background-color: #6fbf73; color: white;",  # Нежный зелёный
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">local_shipping</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">local_shipping</span>',
             },
             'unloading': {
                 'style': "background-color: #b0a8b9; color: black;",  # Светло-серый с оттенком сиреневого
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">unarchive</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">unarchive</span>',
             },
             'in_warehouse': {
                 'style': "background-color: #555e6c; color: white;",  # Глубокий серо-синий
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">warehouse</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">warehouse</span>',
             },
             'completed': {
                 'style': "background-color: #88c0d0; color: black;",  # Пастельный голубой
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">check_circle</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">check_circle</span>',
             },
             'canceled': {
                 'style': "background-color: #bf616a; color: white;",  # Мягкий красный
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: middle;">cancel</span>',
+                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
+                        'middle;">cancel</span>',
             },
         }
 
@@ -219,8 +219,8 @@ class OrderAdmin(ModelAdmin,SimpleHistoryAdmin, ImportExportModelAdmin):
 
         # Возврат HTML
         return mark_safe(
-            f''' <div style="display: flex; align-items: center; justify-content: left; padding: 6px 6px; padding-left:10px;
-            border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px; {style_classes}">
+            f''' <div style="display: flex; align-items: center; justify-content: left; padding: 6px 6px; 
+            padding-left:10px; border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px; {style_classes}">
                 {icon}
                 <span>{status_display}</span>
             </div>
