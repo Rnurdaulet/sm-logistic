@@ -1,4 +1,8 @@
-from django.db import models
+import os
+from io import BytesIO
+from PIL import Image, ImageDraw, ImageFont
+from django.core.files.base import ContentFile
+import segno
 
 from django.db import models
 
@@ -101,10 +105,6 @@ class Sector(models.Model):
         return f"{self.unique_id} - {self.name}"
 
 
-from django.db import models
-
-from django.db import models
-
 class Shelf(models.Model):
     """Модель для представления полок внутри сектора."""
     sector = models.ForeignKey(
@@ -114,7 +114,6 @@ class Shelf(models.Model):
         verbose_name="Сектор",
     )
 
-    # Варианты расположения полки
     LOWER = 'lower'
     MIDDLE = 'middle'
     UPPER = 'upper'
@@ -137,6 +136,12 @@ class Shelf(models.Model):
         editable=False,
         verbose_name="Уникальный ID"
     )
+    qr_code = models.ImageField(
+        upload_to="qr_codes/",
+        blank=True,
+        null=True,
+        verbose_name="QR-код"
+    )
 
     class Meta:
         verbose_name = "Полка"
@@ -145,24 +150,19 @@ class Shelf(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.unique_id:
-            # Определяем код для surface
             surface_codes = {
-                self.LOWER: "L",
-                self.MIDDLE: "M",
-                self.UPPER: "U",
+                self.LOWER: "H",
+                self.MIDDLE: "C",
+                self.UPPER: "B",
                 self.FRONT: "F",
             }
-            surface_code = surface_codes.get(self.surface, "X")  # Используем "X", если surface неизвестен
-
-            # Формируем базовый уникальный идентификатор
+            surface_code = surface_codes.get(self.surface, "X")
             base_unique_id = (
-                f"{self.sector.area.warehouse.unique_id[-2:]}"  # Последние 2 символа ID склада
-                f"{self.sector.area.unique_id[-2:]}"           # Последние 2 символа ID области
-                f"{self.sector.unique_id[-2:]}"                # Последние 2 символа ID сектора
-                f"{surface_code}"                              # Код поверхности
+                f"{self.sector.area.warehouse.unique_id[-2:]}"
+                f"{self.sector.area.unique_id[-2:]}"
+                f"{self.sector.unique_id[-2:]}"
+                f"{surface_code}"
             )
-
-            # Проверяем уникальность и добавляем суффикс, если необходимо
             counter = 1
             unique_id = base_unique_id
             while Shelf.objects.filter(unique_id=unique_id).exists():
@@ -170,10 +170,64 @@ class Shelf(models.Model):
                 counter += 1
 
             self.unique_id = unique_id
+
+        # Генерация QR-кода после определения unique_id
+        if not self.qr_code:
+            self.generate_and_save_qr_code()
+
         super().save(*args, **kwargs)
 
-    def __str__(self):
-        return f"{self.unique_id} - {self.get_surface_display()}"
+    def generate_and_save_qr_code(self):
+        # Генерация QR-кода
+        qr = segno.make(f"W{self.unique_id}",micro=False)
+        buffer = BytesIO()
+        qr.save(buffer, kind='png', scale=5)
+        buffer.seek(0)
+
+        # Открываем QR-код как изображение
+        qr_image = Image.open(buffer)
+
+        # Создаём текст цепочки с разделением на строки
+        text_parts = [
+            f"{self.sector.area.warehouse.name}",
+            f"{self.sector.area.name} {self.sector.name}",
+            f"{self.unique_id}"
+        ]
+
+        # Настраиваем шрифт
+        try:
+            font = ImageFont.truetype("arial.ttf", size=20)
+        except IOError:
+            font = ImageFont.load_default()
+
+        # Определяем ширину и высоту текста
+        draw = ImageDraw.Draw(qr_image)
+        text_width = max(int(draw.textbbox((0, 0), line, font=font)[2]) for line in text_parts)
+        text_height = sum(int(draw.textbbox((0, 0), line, font=font)[3]) for line in text_parts) + (
+                    len(text_parts) - 1) * 5
+
+        # Создаем новое изображение, добавляя место справа для текста
+        new_width = qr_image.width + text_width + 20
+        new_height = max(qr_image.height, text_height)
+        new_image = Image.new("RGB", (new_width, new_height), "white")
+        new_image.paste(qr_image, (0, 0))
+
+        # Рисуем текст справа
+        text_x = qr_image.width + 10
+        current_y = (new_height - text_height) // 2
+        draw = ImageDraw.Draw(new_image)
+        for line in text_parts:
+            draw.text((text_x, current_y), line, fill="black", font=font)
+            current_y += int(draw.textbbox((0, 0), line, font=font)[3]) + 5
+
+        # Сохранение изображения
+        buffer = BytesIO()
+        new_image.save(buffer, format="PNG")
+        buffer.seek(0)
+
+        # Сохраняем изображение в поле qr_code
+        file_name = f"{self.unique_id}_qr.png"
+        self.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=False)
 
 
 
