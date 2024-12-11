@@ -13,6 +13,7 @@ import segno
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 from django.core.files.base import ContentFile
+from simple_history.models import HistoricalRecords
 
 
 class Order(models.Model):
@@ -62,6 +63,8 @@ class Order(models.Model):
     date = models.DateTimeField("Дата", auto_now_add=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)
+
+    history = HistoricalRecords()
 
     class Meta:
         verbose_name = "Заказ"

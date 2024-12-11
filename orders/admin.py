@@ -195,7 +195,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
                         'middle;">warehouse</span>',
             },
             'completed': {
-                'style': "background-color: #88c0d0; color: black;",  # Пастельный голубой
+                'style': "background-color: #88d0a0; color: black;",  # Пастельный голубой
                 'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
                         'middle;">check_circle</span>',
             },
