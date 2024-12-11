@@ -185,6 +185,14 @@ DATETIME_INPUT_FORMATS = [
 OPTIMIZED_IMAGE_METHOD = 'pillow'
 
 
+# STORAGES = {
+#     "default": {
+#         "BACKEND": "django.core.files.storage.FileSystemStorage",
+#     },
+#     "staticfiles": {
+#         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+#     },
+# }
 ######################################################################
 # Unfold
 ######################################################################
@@ -199,8 +207,11 @@ UNFOLD = {
     "SITE_SYMBOL": "local_shipping",
     "SHOW_HISTORY": True,
     "LOGIN": {
-        "image": lambda request: static("images/login-bg.jpg"),
+        "image": lambda request: static("admin/images/login-bg.jpg"),
     },
+    # "STYLES": [
+    #     lambda request: static("admin/css/styles.css"),
+    # ],
     "TABS": [
         {
             "models": ["orders.order"],
