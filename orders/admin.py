@@ -1,13 +1,16 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.db.models import F, Q
+from django.shortcuts import redirect
 from django.urls import path
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django_filters.constants import EMPTY_VALUES
+from reportlab.lib.pagesizes import A4, A6
+from reportlab.lib.units import cm
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter, TextFilter
-from unfold.decorators import display
+from unfold.decorators import display, action
 
 from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
@@ -17,6 +20,9 @@ from import_export.admin import ImportExportModelAdmin
 from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
 
 from django.contrib.admin import SimpleListFilter
+
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
 
 
 class PaymentStatusFilter(SimpleListFilter):
@@ -68,6 +74,7 @@ def filtered_orders_by_shelf(request, shelf_id):
 
 
 # Админка OrderAdmin
+
 @admin.register(Order)
 class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
     """
@@ -116,7 +123,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'description': "Заполните информацию о деталях заказа",
         }),
     )
-
+    actions_detail = ["generate_pdf"]
     # radio_fields = {"status": admin.VERTICAL}
     list_filter_submit = True
     list_filter_sheet = False
@@ -226,3 +233,95 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             </div>
             '''
         )
+
+    @action(
+        description="Generate PDF",
+        url_path="generate_pdf",
+        permissions=["generate_pdf"],
+    )
+    def generate_pdf(self, request, queryset=None, **kwargs):
+        """
+        Генерация PDF для выбранных заказов.
+        """
+        # Если `queryset` отсутствует, пробуем получить один объект по `object_id`
+        if queryset is None:
+            object_id = kwargs.get("object_id")
+            if object_id:
+                queryset = self.model.objects.filter(pk=object_id)
+            else:
+                return HttpResponse("Не указан объект или выборка для генерации PDF.", status=400)
+
+        if not queryset.exists():
+            return HttpResponse("Нет доступных заказов для генерации PDF.", status=400)
+
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = 'attachment; filename="orders.pdf"'
+
+        self._create_pdf(response, queryset)
+
+        return response
+
+    def _create_pdf(self, response, queryset):
+        """
+        Генерация содержимого PDF.
+        """
+        p = canvas.Canvas(response, pagesize=A6)
+        width, height = A6
+
+        # Заголовок
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(10, height - 20, "Перевозчик «Сауле – Марат»")
+
+        # Контактные данные
+        p.setFont("Helvetica", 10)
+        p.drawString(10, height - 40, "г. Алматы пункт приема груза")
+        p.drawString(10, height - 55, "Рынок «Salem», Ангарская 107")
+        p.drawString(10, height - 70, "Тел.: 8778 869 5454, 8702 199 9507")
+
+        p.drawString(10, height - 95, "г. Астана пункт выдачи груза")
+        p.drawString(10, height - 110, "ул. Пушкина 35")
+        p.drawString(10, height - 125, "Режим работы: 9:00 - 14:00")
+
+        # Заголовок таблицы данных
+        y_position = height - 150
+
+        for order in queryset:
+            # Извлекаем данные из queryset
+            order_number = getattr(order, 'order_number', 'N/A')
+            receiver = getattr(order, 'receiver', 'N/A')
+            seats = getattr(order, 'seats', 'N/A')
+            price = getattr(order, 'price', 'N/A')
+
+            # Рисуем данные
+            p.setFont("Helvetica", 10)
+            p.drawString(10, y_position, f"Номер авто машины № {order_number}")
+            p.drawString(10, y_position - 15, f"Получатель: {receiver}")
+            p.drawString(10, y_position - 30, f"Кол-во мест: {seats}")
+            p.drawString(10, y_position - 45, f"Оплата: {price}₸")
+            p.drawString(10, y_position - 60, "Принял: _____________________")
+            p.drawString(10, y_position - 75, "Дата: _______________________")
+            y_position -= 100  # Расстояние между заказами
+
+            if y_position < 50:  # Если места на странице не хватает
+                p.showPage()
+                y_position = height - 20
+
+        # Примечания
+        p.setFont("Helvetica", 8)
+        p.drawString(10, y_position - 20, "Звонить через день после сдачи товара!")
+        p.drawString(10, y_position - 30, "Выдача товара строго по квитанции!")
+        p.drawString(10, y_position - 40, "Товар нужно забирать в день прибытия!")
+        p.drawString(10, y_position - 50, "Хранение товара на складе платное!!!")
+        p.drawString(10, y_position - 60, "Минимальная стоимость перевозки груза от 3000 тг")
+        p.drawString(10, y_position - 70, "ПРЕТЕНЗИИ НЕ ПРИНИМАЮТСЯ:")
+
+        # Завершаем PDF
+        p.save()
+
+    def has_generate_pdf_permission(self, request,obj=None):
+        """
+        Проверяет, имеет ли пользователь доступ к действию custom_actions_detail.
+        """
+        # Логика проверки прав пользователя.
+        # Например, доступ только администраторам:
+        return request.user.is_superuser

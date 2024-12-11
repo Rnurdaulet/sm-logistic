@@ -15,6 +15,9 @@ from io import BytesIO
 from django.core.files.base import ContentFile
 from simple_history.models import HistoricalRecords
 
+from reportlab.pdfgen import canvas
+from django.http import HttpResponse
+
 
 class Order(models.Model):
     STATUS_CHOICES = [
@@ -186,6 +189,39 @@ class Order(models.Model):
         # Сохраняем изображение в поле qr_code
         file_name = f"{self.order_number}_qr.png"
         self.qr_code.save(file_name, ContentFile(buffer.getvalue()), save=False)
+
+    def generate_pdf(self):
+        """
+        Генерация PDF-файла с деталями заказа.
+        """
+        # Имя PDF-файла
+        file_name = f"Order_{self.order_number}.pdf"
+
+        # HTTP-ответ для передачи PDF
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+
+        # Создаём PDF с помощью ReportLab
+        p = canvas.Canvas(response)
+
+        # Настраиваем шрифт и размеры
+        p.setFont("Helvetica", 12)
+
+        # Добавляем заголовок
+        p.drawString(100, 800, f"Детали заказа №{self.order_number}")
+
+        # Добавляем детали заказа
+        p.drawString(100, 780, f"Отправитель: {self.sender}")
+        p.drawString(100, 760, f"Получатель: {self.receiver}")
+        p.drawString(100, 740, f"Количество мест: {self.seat_count}")
+        p.drawString(100, 720, f"Цена: {self.price}₸")
+        p.drawString(100, 700, f"Статус: {dict(self.STATUS_CHOICES).get(self.status)}")
+
+        # Заканчиваем создание PDF
+        p.showPage()
+        p.save()
+
+        return response
 
     def __str__(self):
         return f"№{self.order_number} от {self.sender} к {self.receiver} на {self.price}₸"
