@@ -54,15 +54,26 @@ class Route(models.Model):
     def save(self, *args, **kwargs):
         """
         Генерация уникального номера маршрута, если он отсутствует.
-        Формат: {Название фуры}-{ДеньМесяц}-{ID}
         """
         if not self.unique_number:
-            current_date = now()
-            day = current_date.strftime('%d')
-            month = current_date.strftime('%m')
-            super().save(*args, **kwargs)  # Сохранение для получения ID
-            self.unique_number = f"{self.truck.name}-{day}{month}-{self.id}"
-            super().save(update_fields=['unique_number'])
+            creation_date = self.created_at or now()
+            self.created_at = creation_date  # Устанавливаем дату создания, если не задана
+
+            # Сохраняем объект, чтобы получить первичный ключ (id)
+            super().save(*args, **kwargs)
+
+            # Получаем ID последнего заказа за текущий день
+            start_of_day = creation_date.date()
+            unique_id = (
+                    Route.objects.filter(created_at__date=start_of_day)
+                    .aggregate(max_id=models.Max("id"))["max_id"] or 0
+            )
+
+            # Формируем номер заказа
+            self.unique_number = f"{creation_date.strftime('%d%m%y')}-{self.truck.plate_number}-{unique_id + 1:02d}"
+
+            # Сохраняем снова с обновленным уникальным номером
+            super().save(update_fields=["unique_number"])
         else:
             super().save(*args, **kwargs)
 
