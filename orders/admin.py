@@ -317,10 +317,6 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         # Например, доступ только администраторам:
         return request.user.is_superuser
 
-
-import logging
-
-
 def link_callback(uri, rel):
     # use short variable names
     sUrl = settings.STATIC_URL  # Typically /static/

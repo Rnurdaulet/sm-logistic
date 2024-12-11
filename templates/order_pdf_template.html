@@ -90,13 +90,13 @@
                         <tr>
                             <td class="title">
                                 {{ company_name }}
-                                {% static "admin/fonts/DejaVuSans.ttf" %}
                             </td>
 
                             <td>
-                                Накладная №: {{ invoice_number }}<br />
-                                Создано: {{ creation_date }}<br />
-                                Срок: {{ due_date }}
+                                {% for order in orders %}
+                                Накладная №: {{ order.order_number }}<br />
+                                Создано: {{ order.date }}<br />
+                                  {% endfor %}
                             </td>
                         </tr>
                     </table>
@@ -131,12 +131,12 @@
 
             {% for order in orders %}
             <tr class="item">
-                <td>Номер машины: {{ order.order_number }}<br />
+                <td>Номер машины: {{ order.route.unique_number }}<br />
                     Получатель: {{ order.receiver }}<br />
-                    Кол-во мест: {{ order.seats }}<br />
+                    Кол-во мест: {{ order.seat_count }}<br />
                     Оплата: {{ order.price }}₸<br />
                     Принял: _____________________<br />
-                    Дата: _______________________
+                    Дата: {{ order.date }}
                 </td>
             </tr>
             {% endfor %}
