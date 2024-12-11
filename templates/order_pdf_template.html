@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Шаблон накладной</title>
+
+    <!-- Использование локального шрифта -->
+    <style>
+        @font-face {
+            font-family: 'DejaVuSans';
+            src: url('{% static "admin/fonts/DejaVuSans.ttf" %}') format('truetype');
+        }
+
+        body {
+            font-family: 'DejaVuSans', Arial, sans-serif;
+            text-align: center;
+            color: #777;
+        }
+
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            font-size: 16px;
+            line-height: 24px;
+            color: #555;
+        }
+
+        .invoice-box table {
+            width: 100%;
+            line-height: inherit;
+            text-align: left;
+            border-collapse: collapse;
+        }
+
+        .invoice-box table td {
+            padding: 5px;
+            vertical-align: top;
+        }
+
+        .invoice-box table tr.top table td {
+            padding-bottom: 20px;
+        }
+
+        .invoice-box table tr.top table td.title {
+            font-size: 35px;
+            line-height: 35px;
+            color: #333;
+        }
+
+        .invoice-box table tr.information table td {
+            padding-bottom: 40px;
+        }
+
+        .invoice-box table tr.heading td {
+            background: #eee;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+
+        .invoice-box table tr.details td {
+            padding-bottom: 20px;
+        }
+
+        .invoice-box table tr.item td {
+            border-bottom: 1px solid #eee;
+        }
+
+        .invoice-box table tr.item.last td {
+            border-bottom: none;
+        }
+
+        .invoice-box table tr.total td:nth-child(2) {
+            border-top: 2px solid #eee;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-box">
+        <table>
+            <tr class="top">
+                <td colspan="2">
+                    <table>
+                        <tr>
+                            <td class="title">
+                                {{ company_name }}
+                                {% static "admin/fonts/DejaVuSans.ttf" %}
+                            </td>
+
+                            <td>
+                                Накладная №: {{ invoice_number }}<br />
+                                Создано: {{ creation_date }}<br />
+                                Срок: {{ due_date }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr class="information">
+                <td colspan="2">
+                    <table>
+                        <tr>
+                            <td>
+                                Пункт приема (г. Алматы):<br />
+                                {{ contact_details.almaty.address }}<br />
+                                Тел.: {{ contact_details.almaty.phone }}
+                            </td>
+
+                            <td>
+                                Пункт выдачи (г. Астана):<br />
+                                {{ contact_details.astana.address }}<br />
+                                Режим работы: {{ contact_details.astana.working_hours }}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+
+            <tr class="heading">
+                <td>Детали заказа</td>
+
+                <td></td>
+            </tr>
+
+            {% for order in orders %}
+            <tr class="item">
+                <td>Номер машины: {{ order.order_number }}<br />
+                    Получатель: {{ order.receiver }}<br />
+                    Кол-во мест: {{ order.seats }}<br />
+                    Оплата: {{ order.price }}₸<br />
+                    Принял: _____________________<br />
+                    Дата: _______________________
+                </td>
+            </tr>
+            {% endfor %}
+
+            {% if notes %}
+            <tr class="heading">
+                <td>Примечания</td>
+
+                <td></td>
+            </tr>
+
+            <tr class="item">
+                <td colspan="2">
+                    {% for note in notes %}
+                    {{ note }}<br />
+                    {% endfor %}
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+</body>
+</html>

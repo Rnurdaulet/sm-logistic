@@ -1,6 +1,9 @@
+import os
+
 from django.contrib import admin, messages
 from django.db.models import F, Q
 from django.shortcuts import redirect
+from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -11,7 +14,9 @@ from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter, TextFilter
 from unfold.decorators import display, action
+from xhtml2pdf.files import pisaFileObject
 
+from sm_project import settings
 from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
 from .resources import OrderResource
@@ -23,6 +28,8 @@ from django.contrib.admin import SimpleListFilter
 
 from reportlab.pdfgen import canvas
 from django.http import HttpResponse
+
+from xhtml2pdf import pisa
 
 
 class PaymentStatusFilter(SimpleListFilter):
@@ -87,7 +94,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
 
     autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
-    list_display = ('order_number', 'sender', 'receiver', 'display_payment_status',   'route', 'shelf','display_status',)
+    list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'route', 'shelf', 'display_status',)
 
     list_filter = (
         'is_cashless',
@@ -109,7 +116,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'fields': ('route',)
         }),
         ("Основная информация", {
-            'fields': ('order_number',"qr_code", 'status', 'sender', 'receiver', 'image', 'comment')
+            'fields': ('order_number', "qr_code", 'status', 'sender', 'receiver', 'image', 'comment')
         }),
         ("Детали заказа", {
             'fields': ('seat_count', 'is_cashless', 'price', 'paid_amount', 'add_full_payment_button')
@@ -243,7 +250,12 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         """
         Генерация PDF для выбранных заказов.
         """
-        # Если `queryset` отсутствует, пробуем получить один объект по `object_id`
+        if pisa is None:
+            return HttpResponse(
+                "Библиотека xhtml2pdf не установлена. Пожалуйста, установите её с помощью 'pip install xhtml2pdf'.",
+                status=500)
+
+        # Если queryset отсутствует, пробуем получить один объект по object_id
         if queryset is None:
             object_id = kwargs.get("object_id")
             if object_id:
@@ -254,74 +266,78 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         if not queryset.exists():
             return HttpResponse("Нет доступных заказов для генерации PDF.", status=400)
 
+        # Подготовка контекста для рендера шаблона
+        context = {
+            'orders': queryset,
+            'company_name': "Перевозчик \u00abСауле \u2013 Марат\u00bb",
+            'contact_details': {
+                'almaty': {
+                    'address': "Рынок \u00abSalem\u00bb, Ангарская 107",
+                    'phone': "8778 869 5454, 8702 199 9507",
+                },
+                'astana': {
+                    'address': "ул. Пушкина 35",
+                    'working_hours': "9:00 - 14:00",
+                }
+            },
+            'notes': [
+                "Звонить через день после сдачи товара!",
+                "Выдача товара строго по квитанции!",
+                "Товар нужно забирать в день прибытия!",
+                "Хранение товара на складе платное!!!",
+                "Минимальная стоимость перевозки груза от 3000 тг",
+                "ПРЕТЕНЗИИ НЕ ПРИНИМАЮТСЯ:",
+            ]
+        }
+
+        # Рендер HTML-шаблона
+        html = render_to_string('order_pdf_template.html', context)
+
+        # Генерация PDF
         response = HttpResponse(content_type='application/pdf')
         response['Content-Disposition'] = 'attachment; filename="orders.pdf"'
 
-        self._create_pdf(response, queryset)
+        pisa_status = pisa.CreatePDF(
+            src=html,
+            dest=response,
+            encoding='utf-8',  # Обеспечивает поддержку кириллицы
+            link_callback=link_callback)
+
+        # Проверка ошибок при генерации PDF
+        if pisa_status.err:
+            return HttpResponse("Ошибка при генерации PDF", status=500)
 
         return response
 
-    def _create_pdf(self, response, queryset):
-        """
-        Генерация содержимого PDF.
-        """
-        p = canvas.Canvas(response, pagesize=A6)
-        width, height = A6
-
-        # Заголовок
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(10, height - 20, "Перевозчик «Сауле – Марат»")
-
-        # Контактные данные
-        p.setFont("Helvetica", 10)
-        p.drawString(10, height - 40, "г. Алматы пункт приема груза")
-        p.drawString(10, height - 55, "Рынок «Salem», Ангарская 107")
-        p.drawString(10, height - 70, "Тел.: 8778 869 5454, 8702 199 9507")
-
-        p.drawString(10, height - 95, "г. Астана пункт выдачи груза")
-        p.drawString(10, height - 110, "ул. Пушкина 35")
-        p.drawString(10, height - 125, "Режим работы: 9:00 - 14:00")
-
-        # Заголовок таблицы данных
-        y_position = height - 150
-
-        for order in queryset:
-            # Извлекаем данные из queryset
-            order_number = getattr(order, 'order_number', 'N/A')
-            receiver = getattr(order, 'receiver', 'N/A')
-            seats = getattr(order, 'seats', 'N/A')
-            price = getattr(order, 'price', 'N/A')
-
-            # Рисуем данные
-            p.setFont("Helvetica", 10)
-            p.drawString(10, y_position, f"Номер авто машины № {order_number}")
-            p.drawString(10, y_position - 15, f"Получатель: {receiver}")
-            p.drawString(10, y_position - 30, f"Кол-во мест: {seats}")
-            p.drawString(10, y_position - 45, f"Оплата: {price}₸")
-            p.drawString(10, y_position - 60, "Принял: _____________________")
-            p.drawString(10, y_position - 75, "Дата: _______________________")
-            y_position -= 100  # Расстояние между заказами
-
-            if y_position < 50:  # Если места на странице не хватает
-                p.showPage()
-                y_position = height - 20
-
-        # Примечания
-        p.setFont("Helvetica", 8)
-        p.drawString(10, y_position - 20, "Звонить через день после сдачи товара!")
-        p.drawString(10, y_position - 30, "Выдача товара строго по квитанции!")
-        p.drawString(10, y_position - 40, "Товар нужно забирать в день прибытия!")
-        p.drawString(10, y_position - 50, "Хранение товара на складе платное!!!")
-        p.drawString(10, y_position - 60, "Минимальная стоимость перевозки груза от 3000 тг")
-        p.drawString(10, y_position - 70, "ПРЕТЕНЗИИ НЕ ПРИНИМАЮТСЯ:")
-
-        # Завершаем PDF
-        p.save()
-
-    def has_generate_pdf_permission(self, request,obj=None):
+    def has_generate_pdf_permission(self, request, obj=None):
         """
         Проверяет, имеет ли пользователь доступ к действию custom_actions_detail.
         """
         # Логика проверки прав пользователя.
         # Например, доступ только администраторам:
         return request.user.is_superuser
+
+
+import logging
+
+
+def link_callback(uri, rel):
+    # use short variable names
+    sUrl = settings.STATIC_URL  # Typically /static/
+    sRoot = settings.STATICFILES_DIRS[0]  # Typically /home/userX/project_static/
+    mUrl = settings.MEDIA_URL  # Typically /static/media/
+    mRoot = settings.MEDIA_ROOT  # Typically /home/userX/project_static/media/
+    # convert URIs to absolute system paths
+    if uri.startswith(mUrl):
+        path = os.path.join(mRoot, uri.replace(mUrl, ""))
+    elif uri.startswith(sUrl):
+        path = os.path.join(sRoot, uri.replace(sUrl, ""))
+    else:
+        path = uri
+
+    pisaFileObject.getNamedFile = lambda self: path
+
+    # make sure that file exists
+    if not os.path.isfile(path):
+        raise Exception('media URI must start with %s or %s' % (sUrl, mUrl))
+    return path
