@@ -112,14 +112,14 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
     )
 
     fieldsets = (
-        ("Маршрут", {
-            'fields': ('route',)
-        }),
         ("Основная информация", {
-            'fields': ('order_number', "qr_code", 'status', 'sender', 'receiver', 'image', 'comment')
+            'fields': ('order_number', 'route', 'status', 'sender', 'receiver', 'comment', 'image')
         }),
         ("Детали заказа", {
-            'fields': ('seat_count', 'is_cashless', 'price', 'paid_amount', 'add_full_payment_button')
+            'fields': ('seat_count', 'is_cashless', 'price',('add_full_payment_button'), 'paid_amount', )
+        }),
+        ("QR", {
+            'fields': ('qr_code',)
         }),
         ("Склад", {
             'fields': ('shelf',)
@@ -127,7 +127,6 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         ("Дополнительно", {
             'fields': ('date', 'created_at', 'updated_at',),
             'classes': ('collapse',),
-            'description': "Заполните информацию о деталях заказа",
         }),
     )
     actions_detail = ["generate_pdf"]
@@ -242,7 +241,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         )
 
     @action(
-        description="Generate PDF",
+        description="Скачать чек",
         url_path="generate_pdf",
         permissions=["generate_pdf"],
     )
@@ -286,7 +285,6 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
                 "Товар нужно забирать в день прибытия!",
                 "Хранение товара на складе платное!!!",
                 "Минимальная стоимость перевозки груза от 3000 тг",
-                "ПРЕТЕНЗИИ НЕ ПРИНИМАЮТСЯ:",
             ]
         }
 
