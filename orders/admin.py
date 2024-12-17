@@ -1,34 +1,24 @@
 import os
+from functools import lru_cache
 
-from django.contrib import admin, messages
-from django.db.models import F, Q
-from django.shortcuts import redirect
+from django.contrib import admin
+from django.db.models import F
 from django.template.loader import render_to_string
 from django.urls import path
-from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django_filters.constants import EMPTY_VALUES
-from reportlab.lib.pagesizes import A4, A6
-from reportlab.lib.units import cm
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin
-from unfold.contrib.filters.admin import ChoicesDropdownFilter, RelatedDropdownFilter, RangeDateFilter, TextFilter
-from unfold.decorators import display, action
+from unfold.contrib.filters.admin import RangeDateFilter
+from unfold.decorators import action
 from xhtml2pdf.files import pisaFileObject
-
 from sm_project import settings
 from .models import Order
 from orders.services import get_filtered_orders_url, redirect_with_custom_title
 from .resources import OrderResource
-
 from import_export.admin import ImportExportModelAdmin
-from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
-
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 from django.contrib.admin import SimpleListFilter
-
-from reportlab.pdfgen import canvas
 from django.http import HttpResponse
-
 from xhtml2pdf import pisa
 
 
@@ -87,20 +77,12 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
-    resource_class = OrderResource
-    import_form_class = ImportForm
-    export_form_class = SelectableFieldsExportForm
-    date_hierarchy = "date"
 
     autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'route', 'shelf', 'display_status',)
 
-    list_filter = (
-        'is_cashless',
-        PaymentStatusFilter,
-        ("date", RangeDateFilter),
-    )
+    list_filter = ('is_cashless', PaymentStatusFilter, ("date", RangeDateFilter))
 
     search_fields = (
         'order_number',
@@ -116,7 +98,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'fields': ('order_number', 'route', 'status', 'sender', 'receiver', 'comment', 'image')
         }),
         ("Детали заказа", {
-            'fields': ('seat_count', 'is_cashless', 'price',('add_full_payment_button'), 'paid_amount', )
+            'fields': ('seat_count', 'is_cashless', 'price', 'add_full_payment_button', 'paid_amount',)
         }),
         ("QR", {
             'fields': ('qr_code',)
@@ -129,8 +111,12 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    resource_class = OrderResource
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    date_hierarchy = "date"
     actions_detail = ["generate_pdf"]
-    # radio_fields = {"status": admin.VERTICAL}
     list_filter_submit = True
     list_filter_sheet = False
     list_fullwidth = True
@@ -178,66 +164,43 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         else:
             return f"-{instance.price - instance.paid_amount}"
 
+    from django.utils.safestring import mark_safe
+    from functools import lru_cache
+
     @admin.display(description="Статус")
     def display_status(self, instance):
-        # Стили и иконки для каждого статуса
+        # Кэшируем выборку статусов для оптимизации
+        @lru_cache
+        def get_status_dict():
+            return dict(Order.STATUS_CHOICES)
+
+        # Стандартные стили
+        base_style = "display: flex; align-items: center; justify-content: left; padding: 6px 6px; padding-left: 10px; " \
+                     "border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px;"
+        icon_base_style = "font-size: 18px; vertical-align: middle;"
+
+        # Определяем стили и иконки для статусов
         status_styles = {
-            'accepted': {
-                'style': "background-color: #4e79a7; color: white;",  # Спокойный синий
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">done</span>',
-            },
-            'loading': {
-                'style': "background-color: #f8c471; color: black;",  # Светло-оранжевый
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">hourglass_top</span>',
-            },
-            'in_transit': {
-                'style': "background-color: #6fbf73; color: white;",  # Нежный зелёный
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">local_shipping</span>',
-            },
-            'unloading': {
-                'style': "background-color: #b0a8b9; color: black;",  # Светло-серый с оттенком сиреневого
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">unarchive</span>',
-            },
-            'in_warehouse': {
-                'style': "background-color: #555e6c; color: white;",  # Глубокий серо-синий
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">warehouse</span>',
-            },
-            'completed': {
-                'style': "background-color: #88d0a0; color: black;",  # Пастельный голубой
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">check_circle</span>',
-            },
-            'canceled': {
-                'style': "background-color: #bf616a; color: white;",  # Мягкий красный
-                'icon': '<span class="material-symbols-outlined" style="font-size: 18px; vertical-align: '
-                        'middle;">cancel</span>',
-            },
+            'accepted': ("#4e79a7; color: white;", "done"),
+            'loading': ("#f8c471; color: black;", "hourglass_top"),
+            'in_transit': ("#6fbf73; color: white;", "local_shipping"),
+            'unloading': ("#b0a8b9; color: black;", "unarchive"),
+            'in_warehouse': ("#555e6c; color: white;", "warehouse"),
+            'completed': ("#88d0a0; color: black;", "check_circle"),
+            'canceled': ("#bf616a; color: white;", "cancel"),
         }
 
-        # Получение стиля и иконки для текущего статуса
-        status = status_styles.get(instance.status, {
-            'style': "background-color: #d1d5db; color: black;",
-            'icon': '',
-        })
-        style_classes = status['style']
-        icon = status['icon']
+        # Получаем стиль и иконку
+        style, icon = status_styles.get(instance.status, ("#d1d5db; color: black;", ""))
+        status_display = get_status_dict().get(instance.status, instance.status)
 
-        # Читаемое название статуса
-        status_display = dict(Order.STATUS_CHOICES).get(instance.status, instance.status)
-
-        # Возврат HTML
+        # Генерируем HTML
+        icon_html = f'<span class="material-symbols-outlined" style="{icon_base_style}">{icon}</span>' if icon else ""
         return mark_safe(
-            f''' <div style="display: flex; align-items: center; justify-content: left; padding: 6px 6px; 
-            padding-left:10px; border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px; {style_classes}">
-                {icon}
-                <span>{status_display}</span>
-            </div>
-            '''
+            f'''<div style="{base_style} background-color: {style}">
+                    {icon_html}
+                    <span>{status_display}</span>
+                </div>'''
         )
 
     @action(
@@ -314,6 +277,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         # Логика проверки прав пользователя.
         # Например, доступ только администраторам:
         return request.user.is_superuser
+
 
 def link_callback(uri, rel):
     # use short variable names
