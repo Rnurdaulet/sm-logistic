@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils.timezone import now
+
+from services.unique_number_service import UniqueNumberService
 
 
 class Truck(models.Model):
@@ -81,23 +82,7 @@ class Route(models.Model):
 
         # Генерация уникального номера маршрута, если он отсутствует
         if not self.unique_number:
-            creation_date = self.created_at or now()
-            self.created_at = creation_date
-
-            # Первое сохранение для получения первичного ключа
-            super().save(*args, **kwargs)
-
-            start_of_day = creation_date.date()
-            unique_id = (
-                    Route.objects.filter(created_at__date=start_of_day)
-                    .aggregate(max_id=models.Max("id"))["max_id"] or 0
-            )
-
-            self.unique_number = f"{creation_date.strftime('%d%m%y')}-{self.truck.plate_number}-{unique_id + 1:02d}"
-            super().save(update_fields=["unique_number"])
-        else:
-            # Сохраняем объект как обычно
-            super().save(*args, **kwargs)
+            UniqueNumberService.generate_route_unique_number(self)
 
         # Если статус изменился, обновляем связанные заказы
         if is_status_changed:
