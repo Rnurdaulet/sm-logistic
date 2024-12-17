@@ -38,6 +38,7 @@ class WarehouseAdmin(ModelAdmin):
     list_display = ("unique_id", "name", "location")
     search_fields = ("name", "location")
     ordering = ("name",)
+    readonly_fields = ("unique_id",)
     inlines = [AreaInline]  # Только области на уровне склада
 
 
@@ -48,6 +49,7 @@ class AreaAdmin(ModelAdmin):
     search_fields = ("name", "warehouse__name")
     list_filter = ("warehouse",)
     ordering = ("warehouse__name", "name")
+    readonly_fields = ("unique_id",)
     inlines = [SectorInline]  # Только сектора на уровне области
 
 
@@ -58,6 +60,7 @@ class SectorAdmin(ModelAdmin):
     search_fields = ("name", "area__name", "area__warehouse__name")
     list_filter = ("area__warehouse", "area")
     ordering = ("area__name", "name")
+    readonly_fields = ("unique_id",)
     inlines = [ShelfInline]  # Только полки на уровне сектора
 
     def get_warehouse(self, obj):
@@ -70,9 +73,10 @@ class SectorAdmin(ModelAdmin):
 class ShelfAdmin(ModelAdmin):
     """Админка для модели полки."""
     list_display = ("unique_id", "surface", "sector", "sector_area", "sector_warehouse")
-    search_fields = ("sector__name", "sector__area__name", "sector__area__warehouse__name")
+    search_fields = ("unique_id","sector__name", "sector__area__name", "sector__area__warehouse__name")
     list_filter = ("sector__area__warehouse", "sector__area", "surface")
     ordering = ("sector__name", "surface")
+    readonly_fields = ("unique_id",)
 
     def sector_area(self, obj):
         return obj.sector.area.name

@@ -7,7 +7,7 @@ class Warehouse(models.Model):
     """Модель для представления склада."""
     name = models.CharField(max_length=255, verbose_name="Название склада")
     location = models.TextField(verbose_name="Местоположение", blank=True, null=True)
-    unique_id = models.CharField(max_length=10, unique=True,editable=False,verbose_name="Уникальный ID",)
+    unique_id = models.CharField(max_length=10, unique=True, editable=False, verbose_name="Уникальный ID", )
 
     class Meta:
         verbose_name = "Склад"
@@ -22,6 +22,7 @@ class Warehouse(models.Model):
                 prefix="W"
             )
         super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.unique_id} - {self.name}"
 
