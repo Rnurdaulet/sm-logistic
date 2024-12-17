@@ -10,7 +10,7 @@ from django.utils.html import format_html
 
 @admin.register(Route)
 class RouteAdmin(ModelAdmin):  # Используем Unfold ModelAdmin
-    list_display = ('truck', 'unique_number', 'display_status', 'created_at', 'updated_at', 'view_orders_button')
+    list_display = ('truck', 'unique_number', 'view_orders_button', 'display_status', 'created_at',)
     list_filter = ('status', 'created_at', 'updated_at', 'truck')
     search_fields = ('truck__name', 'unique_number')
     ordering = ('-created_at',)  # Сортировка по умолчанию
@@ -75,6 +75,7 @@ class RouteAdmin(ModelAdmin):  # Используем Unfold ModelAdmin
                     <span>{status_display}</span>
                 </div>'''
         )
+
 
 @admin.register(Truck)
 class TruckAdmin(ModelAdmin):  # Добавляем админку для модели Truck
