@@ -1,6 +1,5 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-
 from services.unique_number_service import UniqueNumberService
 
 
@@ -11,7 +10,7 @@ class Truck(models.Model):
     class Meta:
         verbose_name = "Фура"
         verbose_name_plural = "Фуры"
-        ordering = ['name']  # Сортировка по имени фуры
+        ordering = ['name']
 
     def __str__(self):
         return f"{self.name} ({self.plate_number})"
@@ -51,56 +50,46 @@ class Route(models.Model):
     class Meta:
         verbose_name = "Маршрут"
         verbose_name_plural = "Маршруты"
-        ordering = ['-created_at']  # Сортировка по дате создания
+        ordering = ['-created_at']
 
     def clean(self):
-        """
-        Проверяет, можно ли изменить статус маршрута на inactive или completed.
-        """
+        """Проверка на невозможность перевода маршрута в 'inactive' или 'completed' при активных заказах."""
         if self.status in ['inactive', 'completed']:
-            # Получаем связанные заказы с неподходящими статусами
             problematic_orders = self.orders.filter(status__in=['loading', 'in_transit', 'unloading'])
             if problematic_orders.exists():
-                # Генерируем список номеров заказов
                 order_numbers = ", ".join(problematic_orders.values_list("order_number", flat=True))
                 raise ValidationError(
                     f"Невозможно установить статус '{self.get_status_display()}'. "
-                    f"Следующие заказы имеют неподходящий статус: {order_numbers}."
+                    f"Заказы с неподходящим статусом: {order_numbers}."
                 )
 
     def save(self, *args, **kwargs):
         """
-        Генерация уникального номера маршрута, если он отсутствует, и обновление статусов заказов.
+        Проверка данных, генерация номера маршрута и обновление связанных заказов при изменении статуса.
         """
-        self.clean()  # Вызываем валидацию перед сохранением
-        is_status_changed = False
+        self.clean()  # Валидируем данные перед сохранением
 
-        if self.pk:
-            # Проверяем старый статус маршрута перед сохранением
-            old_status = Route.objects.get(pk=self.pk).status
-            is_status_changed = old_status != self.status
-
-        # Генерация уникального номера маршрута, если он отсутствует
         if not self.unique_number:
-            UniqueNumberService.generate_route_unique_number(self)
+            self.unique_number = UniqueNumberService.generate_route_unique_number(self)
 
-        # Если статус изменился, обновляем связанные заказы
-        if is_status_changed:
-            self.update_order_statuses()
+        # Проверка и обновление статусов заказов
+        if self.pk:
+            old_status = Route.objects.get(pk=self.pk).status
+            if old_status != self.status:
+                self._update_orders_on_status_change()
 
-    def update_order_statuses(self):
-        """
-        Обновляет статусы связанных заказов в зависимости от статуса маршрута.
-        """
-        new_status_map = {
+        super().save(*args, **kwargs)
+
+    def _update_orders_on_status_change(self):
+        """Обновляет статусы заказов при изменении статуса маршрута."""
+        status_map = {
             'loading': 'loading',
             'on_way': 'in_transit',
             'unloading': 'unloading',
         }
-
-        if self.status in new_status_map:
-            new_status = new_status_map[self.status]
+        new_status = status_map.get(self.status)
+        if new_status:
             self.orders.filter(status__in=['accepted', 'loading', 'in_transit', 'unloading']).update(status=new_status)
 
     def __str__(self):
-        return f"{self.unique_number} -  ({self.get_status_display()})"
+        return f"{self.unique_number} - ({self.get_status_display()})"
