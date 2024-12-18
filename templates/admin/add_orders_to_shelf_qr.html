@@ -1,0 +1,286 @@
+{% extends "unfold/layouts/base.html" %}
+{% load static %}
+{% block content %}
+    <div class="max-w-5xl mx-auto mt-8">
+    <!-- Карточка -->
+    <fieldset class="module shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <h2 class="bg-gray-100 font-semibold px-6 py-3 text-sm text-gray-800 rounded-t-lg dark:bg-gray-800 dark:text-gray-200">
+            Добавить заказы на полку
+        </h2>
+
+        <!-- Форма -->
+        <div class="p-6 space-y-6">
+            <form id="qr-form" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="qr_data" name="qr_data" required>
+
+                <!-- Поле сканирования QR-кода -->
+                <div>
+                    <label class="block font-semibold text-sm text-gray-700 dark:text-gray-200 mb-2">
+                        Сканирование QR-кода
+                    </label>
+                    <div id="my-qr-reader" class="w-full bg-gray-50 dark:bg-gray-800 rounded-md shadow-sm border border-gray-300 dark:border-gray-700">
+                        <div id="video-container" class="relative h-64 bg-black rounded-md">
+                            <video id="qr-video" class="w-full h-full object-cover rounded-md"></video>
+                        </div>
+
+                <!-- Кнопки управления -->
+                    <div class="mt-4 flex items-center justify-between">
+                        <!-- Фонарик -->
+                        <div class="flex items-center gap-2">
+                            <span id="cam-has-flash" class="text-sm text-gray-600 dark:text-gray-300">-</span>
+                            <button id="flash-toggle" type="button"
+                                class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                📸 Включить/выключить
+                            </button>
+                        </div>
+
+                        <!-- Настройки -->
+                        <button type="button" id="open-modal"
+                            class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            ⚙️ Настройки
+                        </button>
+                    </div>
+                    </div>
+                </div>
+
+                <!-- Результаты сканирования -->
+                <div class="mt-6 space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                    <p><b>Результат сканирования QR-кода:</b> <span id="cam-qr-result">None</span></p>
+                    <p><b>Последнее сканирование:</b> <span id="cam-qr-result-timestamp">-</span></p>
+                </div>
+
+                <!-- Кнопки управления -->
+                <div class="flex justify-end space-x-4 mt-6">
+                    <button id="start-button" type="button"
+                        class="px-4 py-2 bg-primary-600 text-white font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        Начать
+                    </button>
+                    <button id="stop-button" type="button"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-300">
+                        Остановить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </fieldset>
+</div>
+
+<!-- Модальное окно для настроек -->
+<div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-gray-800 bg-opacity-50">
+    <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-lg">
+        <div class="p-6 space-y-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Настройки сканирования</h3>
+
+            <!-- Highlight Style -->
+            <div>
+                <label for="scan-region-highlight-style-select" class="block mb-1 font-medium text-sm">Highlight Style</label>
+                <select id="scan-region-highlight-style-select"
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700">
+                    <option value="default-style">Default style</option>
+                    <option value="example-style-1">Example custom style 1</option>
+                    <option value="example-style-2">Example custom style 2</option>
+                </select>
+            </div>
+
+            <!-- Inversion Mode -->
+            <div>
+                <label for="inversion-mode-select" class="block mb-1 font-medium text-sm">Inversion Mode</label>
+                <select id="inversion-mode-select"
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700">
+                    <option value="original">Original (dark QR code on bright background)</option>
+                    <option value="invert">Inverted colors</option>
+                    <option value="both">Scan both</option>
+                </select>
+            </div>
+
+            <!-- Выбор камеры -->
+            <div>
+                <label for="cam-list" class="block mb-1 font-medium text-sm">Камера</label>
+                <select id="cam-list"
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700">
+                    <option value="environment" selected>Ориентация на окружающую среду</option>
+                    <option value="user">Фронтальная</option>
+                </select>
+            </div>
+
+            <!-- Видимость области сканирования -->
+            <div>
+                <label for="show-scan-region" class="flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                    <input id="show-scan-region" type="checkbox" class="rounded border-gray-300 focus:ring-primary-500 dark:border-gray-700">
+                    Показать область сканирования
+                </label>
+            </div>
+
+            <!-- Кнопка закрытия -->
+            <div class="text-right mt-4">
+                <button id="close-modal" type="button"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+    // Модальное окно
+    const openModal = document.getElementById('open-modal');
+    const closeModal = document.getElementById('close-modal');
+    const settingsModal = document.getElementById('settings-modal');
+
+    openModal.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+    closeModal.addEventListener('click', () => settingsModal.classList.add('hidden'));
+</script>
+        <script type="module">
+        import QrScanner from "{% static 'admin/js/qr-scanner.min.js' %}";
+
+        const video = document.getElementById('qr-video');
+        const videoContainer = document.getElementById('video-container');
+        const camList = document.getElementById('cam-list');
+        const camHasFlash = document.getElementById('cam-has-flash');
+        const flashToggle = document.getElementById('flash-toggle');
+        const flashState = document.getElementById('flash-state');
+        const camQrResult = document.getElementById('cam-qr-result');
+        const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
+        const fileSelector = document.getElementById('file-selector');
+        const fileQrResult = document.getElementById('file-qr-result');
+        const qr_data = document.getElementById('qr_data');
+        const qr_form = document.getElementById('qr-form');
+        let scanner;
+
+        function setResult(label, result) {
+            console.log(result.data);
+            label.textContent = result.data;
+            camQrResultTimestamp.textContent = new Date().toString();
+            label.style.color = 'teal';
+            clearTimeout(label.highlightTimeout);
+            label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 100);
+            scanner.stop();
+            qr_data.value = result.data;
+           // qr_form.submit();
+            console.log(result.data);
+        }
+
+
+        scanner = new QrScanner(video, result => setResult(camQrResult, result), {
+            onDecodeError: error => {
+                camQrResult.textContent = error;
+                camQrResult.style.color = 'inherit';
+            },
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+        });
+
+        scanner.start().then(() => {
+            updateFlashAvailability();
+            QrScanner.listCameras(true).then(cameras => cameras.forEach(camera => {
+                const option = document.createElement('option');
+                option.value = camera.id;
+                option.text = camera.label;
+                camList.add(option);
+            }));
+        });
+        window.scanner = scanner;
+
+
+        function updateFlashAvailability() {
+            scanner.hasFlash().then(hasFlash => {
+                camHasFlash.textContent = hasFlash;
+                flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
+            });
+        }
+
+        document.getElementById('start-button').addEventListener('click', () => {
+            scanner.start();
+        });
+
+        document.getElementById('stop-button').addEventListener('click', () => {
+            if (scanner) {
+                scanner.stop();
+            }
+        });
+
+        document.getElementById('scan-region-highlight-style-select').addEventListener('change', (e) => {
+            videoContainer.className = e.target.value;
+            scanner._updateOverlay();
+        });
+
+        document.getElementById('show-scan-region').addEventListener('change', (e) => {
+            const input = e.target;
+            const label = input.parentNode;
+            label.parentNode.insertBefore(scanner.$canvas, label.nextSibling);
+            scanner.$canvas.style.display = input.checked ? 'block' : 'none';});
+
+
+        document.getElementById('inversion-mode-select').addEventListener('change', event => {
+            scanner.setInversionMode(event.target.value);
+        });
+
+        camList.addEventListener('change', event => {
+            scanner.setCamera(event.target.value).then(updateFlashAvailability);
+        });
+
+        flashToggle.addEventListener('click', () => {
+            scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+        });
+    </script>
+
+    <style>
+        #video-container {
+            max-width: 350px;
+            {#max-height: 400px;#}
+            overflow: hidden;
+            position: relative;
+        }
+
+        #qr-video {
+            width: 100%; /* Масштабирование по ширине контейнера */
+            height: auto; /* Автоматическая высота для сохранения соотношения сторон */
+            display: block;
+        }
+
+        #video-container {
+            line-height: 0;
+        }
+
+        #video-container.example-style-1 .scan-region-highlight-svg,
+        #video-container.example-style-1 .code-outline-highlight {
+            stroke: #64a2f3 !important;
+        }
+
+        #video-container.example-style-2 {
+            position: relative;
+            width: max-content;
+            height: max-content;
+            overflow: hidden;
+        }
+
+        #video-container.example-style-2 .scan-region-highlight {
+            border-radius: 30px;
+            outline: rgba(0, 0, 0, .25) solid 50vmax;
+        }
+
+        #video-container.example-style-2 .scan-region-highlight-svg {
+            display: none;
+        }
+
+        #video-container.example-style-2 .code-outline-highlight {
+            stroke: rgba(255, 255, 255, .5) !important;
+            stroke-width: 15 !important;
+            stroke-dasharray: none !important;
+        }
+
+        #flash-toggle {
+            display: none;
+        }
+
+        hr {
+            margin-top: 32px;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 16px;
+        }
+    </style>
+{% endblock %}
