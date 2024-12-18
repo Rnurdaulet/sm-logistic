@@ -1,5 +1,9 @@
 from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin, StackedInline, TabularInline
+
+from orders.models import Order
 from .models import Warehouse, Area, Sector, Shelf
 
 
@@ -56,7 +60,7 @@ class AreaAdmin(ModelAdmin):
 @admin.register(Sector)
 class SectorAdmin(ModelAdmin):
     """Админка для модели сектора с вложенными полками."""
-    list_display = ("unique_id", "name", "area", "get_warehouse")
+    list_display = ("unique_id", "name", "area", "get_warehouse", 'view_orders_button')
     search_fields = ("name", "area__name", "area__warehouse__name")
     list_filter = ("area__warehouse", "area")
     ordering = ("area__name", "name")
@@ -68,12 +72,31 @@ class SectorAdmin(ModelAdmin):
 
     get_warehouse.short_description = "Склад"
 
+    def view_orders_button(self, obj):
+        """
+        Кнопка для просмотра заказов, связанных с сектором (через связанные полки).
+        """
+        # Подсчёт всех заказов, связанных с полками в текущем секторе
+        orders_count = Order.objects.filter(shelf__sector=obj).count()
+        if orders_count > 0:
+            # Генерация ссылки на кастомный фильтр
+            url = reverse('admin:orders_shelf__sector_id', args=[obj.id])
+            return format_html(
+                '<a class="button" href="{}">Заказы ({})</a>',
+                url,
+                orders_count
+            )
+        # Если заказов нет
+        return format_html('<span style="color: gray;">Нет заказов</span>')
+
+    view_orders_button.short_description = "Заказы"
+
 
 @admin.register(Shelf)
 class ShelfAdmin(ModelAdmin):
     """Админка для модели полки."""
-    list_display = ("unique_id", "surface", "sector", "sector_area", "sector_warehouse")
-    search_fields = ("unique_id","sector__name", "sector__area__name", "sector__area__warehouse__name")
+    list_display = ("unique_id", "surface", "sector", "sector_area", "sector_warehouse", 'view_orders_button')
+    search_fields = ("unique_id", "sector__name", "sector__area__name", "sector__area__warehouse__name")
     list_filter = ("sector__area__warehouse", "sector__area", "surface")
     ordering = ("sector__name", "surface")
     readonly_fields = ("unique_id",)
@@ -87,3 +110,19 @@ class ShelfAdmin(ModelAdmin):
         return obj.sector.area.warehouse.name
 
     sector_warehouse.short_description = "Склад"
+
+    def view_orders_button(self, obj):
+        """
+        Кнопка для просмотра заказов, связанных с маршрутом.
+        """
+        orders_count = Order.objects.filter(shelf_id=obj.id).count()
+        if orders_count > 0:
+            url = reverse('admin:orders_shelf_id', args=[obj.id])
+            return format_html(
+                '<a class="button" href="{}">Заказы ({})</a>',
+                url,
+                orders_count
+            )
+        return format_html('<span style="color: gray;">Нет заказов</span>')
+
+    view_orders_button.short_description = "Заказы"

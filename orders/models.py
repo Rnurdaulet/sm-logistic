@@ -103,6 +103,9 @@ class Order(models.Model):
             optimized_image = OrderImageService.optimize_image(self.image)
             self.image.save(self.image.name, optimized_image, save=False)
 
+        # Если статус изменяется на 'completed', убираем заказ с полки
+        if self.status == 'completed' and self.shelf is not None:
+            self.shelf = None
         # Если объект не новый, сохраняем изменения как обычно
         if not is_new:
             super().save(*args, **kwargs)

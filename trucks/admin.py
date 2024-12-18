@@ -3,6 +3,8 @@ from functools import lru_cache
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin  # Используем Unfold ModelAdmin
+
+from orders.models import Order
 from trucks.models import Route, Truck
 from django.urls import reverse
 from django.utils.html import format_html
@@ -27,12 +29,11 @@ class RouteAdmin(ModelAdmin):  # Используем Unfold ModelAdmin
 
     def view_orders_button(self, obj):
         """
-        Кнопка для просмотра кастомной страницы заказов для маршрута.
-        Отображается только если есть заказы.
+        Кнопка для просмотра заказов, связанных с маршрутом.
         """
-        orders_count = getattr(obj, 'orders', []).count()  # Подсчёт связанных заказов
+        orders_count = Order.objects.filter(route_id=obj.id).count()
         if orders_count > 0:
-            url = reverse('admin:orders_by_route', args=[obj.id])
+            url = reverse('admin:orders_route_id', args=[obj.id])
             return format_html(
                 '<a class="button" href="{}">Заказы маршрута ({})</a>',
                 url,
@@ -40,7 +41,7 @@ class RouteAdmin(ModelAdmin):  # Используем Unfold ModelAdmin
             )
         return format_html('<span style="color: gray;">Нет заказов</span>')
 
-    view_orders_button.short_description = "Заказы"  # Заголовок колонки
+    view_orders_button.short_description = "Заказы"
 
     @admin.display(description="Статус")
     def display_status(self, instance):

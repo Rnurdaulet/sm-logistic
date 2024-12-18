@@ -1,73 +1,77 @@
 import os
-from functools import lru_cache
+from functools import lru_cache, partial
 
 from django.contrib import admin
 from django.db.models import F
 from django.template.loader import render_to_string
-from django.urls import path
+from django.urls import path, reverse
 from django.utils.safestring import mark_safe
-from simple_history.admin import SimpleHistoryAdmin
+from django.contrib.admin import SimpleListFilter
+from django.http import HttpResponse, HttpResponseRedirect
+
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateFilter
 from unfold.decorators import action
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+
+from simple_history.admin import SimpleHistoryAdmin
+from import_export.admin import ImportExportModelAdmin
+
+from xhtml2pdf import pisa
 from xhtml2pdf.files import pisaFileObject
+
 from sm_project import settings
 from .models import Order
-from orders.services import get_filtered_orders_url, redirect_with_custom_title
 from .resources import OrderResource
-from import_export.admin import ImportExportModelAdmin
-from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
-from django.contrib.admin import SimpleListFilter
-from django.http import HttpResponse
-from xhtml2pdf import pisa
 
 
 class PaymentStatusFilter(SimpleListFilter):
-    title = 'Статус оплаты'  # Название фильтра, которое будет отображаться в админке
-    parameter_name = 'payment_status'  # Параметр URL для фильтра
+    title = 'Статус оплаты'
+    parameter_name = 'payment_status'
 
     def lookups(self, request, model_admin):
         """Возвращает параметры фильтра."""
         return [
             ('paid', 'Оплачено'),
-            ('unpaid', 'Остаток')
+            ('unpaid', 'Неоплачено')
         ]
 
     def queryset(self, request, queryset):
         """Фильтрует записи на основе выбранного параметра."""
-        if self.value() == 'paid':
-            return queryset.filter(price=F('paid_amount'))
-        if self.value() == 'unpaid':
-            return queryset.exclude(price=F('paid_amount'))
+        match self.value():
+            case 'paid':
+                return queryset.filter(price=F('paid_amount'))
+            case 'unpaid':
+                return queryset.exclude(price=F('paid_amount'))
         return queryset
 
 
-# Вспомогательные функции для фильтрации
-def get_filtered_orders(request, field, value, title_prefix, admin_url):
-    url, title = get_filtered_orders_url(value, field, admin_url, f"{title_prefix} для {value}")
-    return redirect_with_custom_title(request, url, title)
+class TruckFilter(SimpleListFilter):
+    title = 'Фура'
+    parameter_name = 'truck'
+
+    def lookups(self, request, model_admin):
+        """Возвращает список доступных фур для фильтрации."""
+        from trucks.models import Truck  # Импортируем модель Truck
+        trucks = Truck.objects.all()
+        return [(truck.id, f"{truck.plate_number}") for truck in trucks]
+
+    def queryset(self, request, queryset):
+        """Фильтрует записи на основе выбранной фуры."""
+        if self.value():
+            return queryset.filter(route__truck_id=self.value())
+        return queryset
 
 
-# Custom view-функции для фильтрации
-def filtered_orders_by_route(request, route_id):
-    return get_filtered_orders(request, "route_id", route_id, "Заказы", "admin:orders_order_changelist")
-
-
-def filtered_orders_by_warehouse(request, warehouse_id):
-    return get_filtered_orders(request, "shelf__sector__area__warehouse_id", warehouse_id, "Заказы",
-                               "admin:orders_order_changelist")
-
-
-def filtered_orders_by_area(request, area_id):
-    return get_filtered_orders(request, "shelf__sector__area_id", area_id, "Заказы", "admin:orders_order_changelist")
-
-
-def filtered_orders_by_sector(request, sector_id):
-    return get_filtered_orders(request, "shelf__sector_id", sector_id, "Заказы", "admin:orders_order_changelist")
-
-
-def filtered_orders_by_shelf(request, shelf_id):
-    return get_filtered_orders(request, "shelf_id", shelf_id, "Заказы", "admin:orders_order_changelist")
+# Общая функция фильтрации заказов
+def filter_orders(request, field, value, title_prefix, admin_url="admin:orders_order_changelist"):
+    """
+    Генерирует URL для фильтрации заказов и перенаправляет на страницу с заголовком.
+    """
+    url = reverse(admin_url)
+    query_string = f"?{field}={value}"
+    request.session['custom_title'] = f"{title_prefix} для {value}"
+    return HttpResponseRedirect(f"{url}{query_string}")
 
 
 # Админка OrderAdmin
@@ -77,12 +81,22 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
+    resource_class = OrderResource
+    import_form_class = ImportForm
+    export_form_class = SelectableFieldsExportForm
+    date_hierarchy = "date"
+    actions_detail = ["generate_pdf"]
+    list_filter_submit = True
+    list_filter_sheet = False
+    list_fullwidth = True
+    warn_unsaved_form = True
+    compressed_fields = True
 
     autocomplete_fields = ('sender', 'receiver', 'shelf', 'route')
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'route', 'shelf', 'display_status',)
 
-    list_filter = ('is_cashless', PaymentStatusFilter, ("date", RangeDateFilter))
+    list_filter = (("date", RangeDateFilter),'is_cashless', PaymentStatusFilter,TruckFilter)
 
     search_fields = (
         'order_number',
@@ -112,57 +126,75 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         }),
     )
 
-    resource_class = OrderResource
-    import_form_class = ImportForm
-    export_form_class = SelectableFieldsExportForm
-    date_hierarchy = "date"
-    actions_detail = ["generate_pdf"]
-    list_filter_submit = True
-    list_filter_sheet = False
-    list_fullwidth = True
-    warn_unsaved_form = True
-    compressed_fields = True
-
     # Добавляем кастомные URL
     def get_urls(self):
-        custom_urls = [
-            path('by-route/<int:route_id>/', self.admin_site.admin_view(filtered_orders_by_route),
-                 name='orders_by_route'),
-            path('by-warehouse/<int:warehouse_id>/', self.admin_site.admin_view(filtered_orders_by_warehouse),
-                 name='orders_by_warehouse'),
-            path('by-area/<int:area_id>/', self.admin_site.admin_view(filtered_orders_by_area), name='orders_by_area'),
-            path('by-sector/<int:sector_id>/', self.admin_site.admin_view(filtered_orders_by_sector),
-                 name='orders_by_sector'),
-            path('by-shelf/<int:shelf_id>/', self.admin_site.admin_view(filtered_orders_by_shelf),
-                 name='orders_by_shelf'),
+        """
+        Добавляет дополнительные маршруты для фильтрации заказов.
+        """
+        custom_filter_routes = [
+            ('by-route/<int:value>/', 'route_id', 'Маршрут'),
+            ('by-warehouse/<int:value>/', 'shelf__sector__area__warehouse_id', 'Склад'),
+            ('by-area/<int:value>/', 'shelf__sector__area_id', 'Зона'),
+            ('by-sector/<int:value>/', 'shelf__sector_id', 'Сектор'),
+            ('by-shelf/<int:value>/', 'shelf_id', 'Полка'),
         ]
+
+        custom_urls = [
+            path(
+                route,
+                self.admin_site.admin_view(
+                    partial(filter_orders, field=field, title_prefix=title)
+                ),
+                name=f"orders_{field}"
+            )
+            for route, field, title in custom_filter_routes
+        ]
+
         return custom_urls + super().get_urls()
 
-    # Кастомизация заголовка списка
     def changelist_view(self, request, extra_context=None):
+        """
+        Настраивает заголовок страницы списка заказов.
+        """
         extra_context = extra_context or {}
         extra_context['title'] = request.session.pop('custom_title', 'Список заказов')
         return super().changelist_view(request, extra_context=extra_context)
 
     # Кнопка "Оплата полностью"
+
     def add_full_payment_button(self, obj):
         """
         Кнопка для установки полной оплаты.
         """
-        return mark_safe(f""" <button type="button" class="bg-primary-600 block border border-transparent font-medium 
-        px-3 py-2 rounded-md text-white w-full lg:w-auto" style="margin-top: 10px; padding: 10px;" 
-        onclick="setFullPayment()">Оплата полностью</button> <script> function setFullPayment() {{ const priceField = 
-        document.getElementById('id_price'); const paidAmountField = document.getElementById('id_paid_amount'); if (
-        priceField && paidAmountField) {{ paidAmountField.value = priceField.value; }} }} </script> """)
+        button_html = """
+        <button type="button" class="bg-primary-600 block border border-transparent font-medium 
+            px-3 py-2 rounded-md text-white w-full lg:w-auto" 
+            style="margin-top: 10px; padding: 10px;" 
+            onclick="setFullPayment()">
+            Оплата полностью
+        </button>
+        """
+        script_html = """
+        <script>
+            function setFullPayment() {
+                const priceField = document.getElementById('id_price');
+                const paidAmountField = document.getElementById('id_paid_amount');
+                if (priceField && paidAmountField) {
+                    paidAmountField.value = priceField.value;
+                }
+            }
+        </script>
+        """
+        return mark_safe(button_html + script_html)
 
     add_full_payment_button.short_description = "Оплата полностью"
 
     @admin.display(description="Оплачено")
     def display_payment_status(self, instance):
         if instance.price == instance.paid_amount:
-            return instance.price
+            return f"{int(instance.price)} ₸"
         else:
-            return f"-{instance.price - instance.paid_amount}"
+            return f"-{instance.price - instance.paid_amount} ₸"
 
     @admin.display(description="Статус")
     def display_status(self, instance):
