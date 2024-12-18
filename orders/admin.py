@@ -8,6 +8,8 @@ from django.urls import path, reverse
 from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
 from django.http import HttpResponse, HttpResponseRedirect
+from import_export.formats import base_formats
+from import_export.formats.base_formats import XLSX
 
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateFilter
@@ -77,13 +79,13 @@ def filter_orders(request, field, value, title_prefix, admin_url="admin:orders_o
 # Админка OrderAdmin
 
 @admin.register(Order)
-class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
+class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
     """
     Админка для модели заказов с кастомными действиями и фильтрацией.
     """
     resource_class = OrderResource
-    import_form_class = ImportForm
-    export_form_class = SelectableFieldsExportForm
+    # import_form_class = ImportForm
+    # export_form_class = SelectableFieldsExportForm
     date_hierarchy = "date"
     actions_detail = ["generate_pdf"]
     list_filter_submit = True
@@ -125,6 +127,28 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'classes': ('collapse',),
         }),
     )
+    actions = ['export_selected_to_excel']
+
+
+    def export_selected_to_excel(self, request, queryset):
+        """
+        Экспортировать выбранные записи в Excel.
+        """
+        resource = self.resource_class()
+        dataset = resource.export(queryset)
+
+        # Получение формата файла (XLSX)
+        file_format = base_formats.XLSX()
+
+        # Генерация ответа с Excel-файлом
+        response = HttpResponse(
+            file_format.export_data(dataset),
+            content_type=file_format.get_content_type()
+        )
+        response['Content-Disposition'] = 'attachment; filename="selected_orders.xlsx"'
+        return response
+
+    export_selected_to_excel.short_description = "Экспортировать выбранные записи в Excel"
 
     # Добавляем кастомные URL
     def get_urls(self):
