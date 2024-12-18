@@ -9,12 +9,15 @@ from django.utils.safestring import mark_safe
 from django.contrib.admin import SimpleListFilter
 from django.http import HttpResponse, HttpResponseRedirect
 from import_export.formats import base_formats
+from django.views.generic import TemplateView
+from django.contrib import messages
 from import_export.formats.base_formats import XLSX
 
 from unfold.admin import ModelAdmin
 from unfold.contrib.filters.admin import RangeDateFilter
 from unfold.decorators import action
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.views import UnfoldModelAdminViewMixin
 
 from simple_history.admin import SimpleHistoryAdmin
 from import_export.admin import ImportExportModelAdmin
@@ -25,6 +28,8 @@ from xhtml2pdf.files import pisaFileObject
 from sm_project import settings
 from .models import Order
 from .resources import OrderResource
+from .services import OrderShelfService
+
 
 
 class PaymentStatusFilter(SimpleListFilter):
@@ -98,7 +103,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
     readonly_fields = ('order_number', 'created_at', 'updated_at', 'date', 'add_full_payment_button')
     list_display = ('order_number', 'sender', 'receiver', 'display_payment_status', 'route', 'shelf', 'display_status',)
 
-    list_filter = (("date", RangeDateFilter),'is_cashless', PaymentStatusFilter,TruckFilter)
+    list_filter = (("date", RangeDateFilter), 'is_cashless', PaymentStatusFilter, TruckFilter)
 
     search_fields = (
         'order_number',
@@ -108,6 +113,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
         'receiver__phone_numbers__number',
         'route__unique_number'
     )
+
     def get_queryset(self, request):
         """
         Переопределяем метод для оптимизации запросов.
@@ -138,7 +144,6 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
         }),
     )
     actions = ['export_selected_to_excel']
-
 
     def export_selected_to_excel(self, request, queryset):
         """
@@ -182,6 +187,14 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
                 name=f"orders_{field}"
             )
             for route, field, title in custom_filter_routes
+        ]
+        # Добавляем кастомную страницу
+        custom_urls += [
+            path(
+                "add-orders-to-shelf/",
+                AddOrdersToShelfView.as_view(model_admin=self),
+                name="add_orders_to_shelf",
+            ),
         ]
 
         return custom_urls + super().get_urls()
@@ -366,3 +379,27 @@ def link_callback(uri, rel):
 
     print(path)
     return path
+
+
+
+
+class AddOrdersToShelfView(UnfoldModelAdminViewMixin, TemplateView):
+    title = "Добавить заказы на полку"  # Заголовок страницы
+    permission_required = ()  # Права доступа
+    template_name = "admin/add_orders_to_shelf.html"  # Шаблон для страницы
+
+    def post(self, request, *args, **kwargs):
+        """Обработка POST-запроса."""
+        order_numbers = request.POST.get("order_numbers", "").split(",")
+        shelf_unique_id = request.POST.get("shelf_unique_id", "").strip()
+
+        try:
+            result = OrderShelfService.add_orders_to_shelf(
+                order_numbers=order_numbers,
+                shelf_unique_id=shelf_unique_id
+            )
+            messages.success(request, result)
+        except ValueError as e:
+            messages.error(request, str(e))
+
+        return self.render_to_response(self.get_context_data(request=request))
