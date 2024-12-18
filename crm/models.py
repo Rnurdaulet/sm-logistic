@@ -31,6 +31,7 @@ class Client(models.Model):
         first_phone = self.phone_numbers.first()
         return first_phone.number if first_phone else None
 
+
 class PhoneNumber(models.Model):
     client = models.ForeignKey(
         Client,

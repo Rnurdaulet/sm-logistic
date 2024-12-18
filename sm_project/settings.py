@@ -28,8 +28,16 @@ SECRET_KEY = 'django-insecure-3r!_q*1nghu80_fqu=kq@a1!dkl*(bbpl1qqujfo&_2ffcg5&m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", '10.0.2.2', ]
 
+
+def show_toolbar(request):
+    return True
+
+
+DEBUG_TOOLBAR_CONFIG = {
+    "SHOW_TOOLBAR_CALLBACK": show_toolbar,
+}
 # Application definition
 
 INSTALLED_APPS = [
@@ -45,6 +53,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "debug_toolbar",
     'warehouse',
     'crm',
     'orders',
@@ -54,6 +63,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "debug_toolbar.middleware.DebugToolbarMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -97,14 +107,13 @@ WSGI_APPLICATION = 'sm_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'smp',         # Имя базы данных
-        'USER': 'admin',             # Имя пользователя
-        'PASSWORD': '123456789',     # Пароль пользователя
-        'HOST': 'localhost',          # Хост, где работает PostgreSQL
-        'PORT': '5432',               # Порт PostgreSQL
+        'NAME': 'smp',  # Имя базы данных
+        'USER': 'admin',  # Имя пользователя
+        'PASSWORD': '123456789',  # Пароль пользователя
+        'HOST': 'localhost',  # Хост, где работает PostgreSQL
+        'PORT': '5432',  # Порт PostgreSQL
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

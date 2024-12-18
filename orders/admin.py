@@ -164,19 +164,12 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
         else:
             return f"-{instance.price - instance.paid_amount}"
 
-    from django.utils.safestring import mark_safe
-    from functools import lru_cache
-
     @admin.display(description="Статус")
     def display_status(self, instance):
-        # Кэшируем выборку статусов для оптимизации
-        @lru_cache
-        def get_status_dict():
-            return dict(Order.STATUS_CHOICES)
-
-        # Стандартные стили
-        base_style = "display: flex; align-items: center; justify-content: left; padding: 6px 6px; padding-left: 10px; " \
-                     "border-radius: 6px; font-size: 14px; font-weight: 500; gap: 6px;"
+        # Определяем базовые стили как атрибут класса
+        base_style = ("display: flex; align-items: center; justify-content: left; "
+                      "padding: 6px 6px; padding-left: 10px; border-radius: 6px; "
+                      "font-size: 14px; font-weight: 500; gap: 6px;")
         icon_base_style = "font-size: 18px; vertical-align: middle;"
 
         # Определяем стили и иконки для статусов
@@ -190,17 +183,23 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin, ImportExportModelAdmin):
             'canceled': ("#bf616a; color: white;", "cancel"),
         }
 
+        # Кэшируем выборку статусов для оптимизации
+        @lru_cache
+        def get_status_dict():
+            return dict(Order.STATUS_CHOICES)
+
         # Получаем стиль и иконку
         style, icon = status_styles.get(instance.status, ("#d1d5db; color: black;", ""))
         status_display = get_status_dict().get(instance.status, instance.status)
 
-        # Генерируем HTML
-        icon_html = f'<span class="material-symbols-outlined" style="{icon_base_style}">{icon}</span>' if icon else ""
+        # Генерируем HTML с использованием шаблона
         return mark_safe(
-            f'''<div style="{base_style} background-color: {style}">
-                    {icon_html}
-                    <span>{status_display}</span>
-                </div>'''
+            f"""
+            <div style="{base_style} background-color: {style}">
+                <span class="material-symbols-outlined" style="{icon_base_style}">{icon}</span>
+                <span>{status_display}</span>
+            </div>
+            """
         )
 
     @action(
@@ -298,4 +297,6 @@ def link_callback(uri, rel):
     # make sure that file exists
     if not os.path.isfile(path):
         raise Exception('media URI must start with %s or %s' % (sUrl, mUrl))
+
+    print(path)
     return path
