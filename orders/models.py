@@ -5,13 +5,7 @@ from services.qr_code_service import QRCodeService
 from services.unique_number_service import UniqueNumberService
 from trucks.models import Route
 from warehouse.models import Shelf
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
-from django.core.files.base import ContentFile
 from simple_history.models import HistoricalRecords
-
-from reportlab.pdfgen import canvas
-from django.http import HttpResponse
 
 
 class Order(models.Model):

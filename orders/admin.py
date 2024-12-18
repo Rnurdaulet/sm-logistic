@@ -108,6 +108,16 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
         'receiver__phone_numbers__number',
         'route__unique_number'
     )
+    def get_queryset(self, request):
+        """
+        Переопределяем метод для оптимизации запросов.
+        """
+        qs = super().get_queryset(request)
+        return qs.select_related(
+            'sender', 'receiver', 'route', 'shelf'
+        ).prefetch_related(
+            'sender__phone_numbers', 'receiver__phone_numbers'
+        )
 
     fieldsets = (
         ("Основная информация", {

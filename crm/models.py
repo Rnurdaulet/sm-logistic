@@ -11,23 +11,15 @@ class Client(models.Model):
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"
-        ordering = ['-created_at']  # Сортировка по умолчанию: по дате создания
+        ordering = ['-created_at']
 
     def __str__(self):
-        phone_list = ", ".join([phone.number for phone in self.phone_numbers.all()])
-        return f"{self.full_name} ({phone_list})"
+        return f"{self.full_name} ({self.get_phone_numbers()})"
 
     def get_phone_numbers(self):
-        """
-        Возвращает все номера телефона клиента через запятую.
-        """
         return ", ".join(phone.number for phone in self.phone_numbers.all())
 
     def get_first_phone_number(self):
-        """
-        Возвращает первый номер телефона клиента.
-        Если номеров нет, возвращает None или пустую строку.
-        """
         first_phone = self.phone_numbers.first()
         return first_phone.number if first_phone else None
 
@@ -44,24 +36,17 @@ class PhoneNumber(models.Model):
     class Meta:
         verbose_name = "Номер телефона"
         verbose_name_plural = "Номера телефонов"
-        ordering = ['number']  # Сортировка по номеру телефона
+        ordering = ['number']
 
     def __str__(self):
         return self.number
 
     def clean(self):
-        """
-        Проверяет, что номер телефона соответствует формату.
-        """
-        phone_pattern = r'^\+?\d{10,15}$'  # Пример: +77001234567
+        phone_pattern = r'^\+?\d{10,15}$'
         if not re.match(phone_pattern, self.number):
             raise ValidationError("Номер телефона должен содержать только цифры и может начинаться с '+'.")
-        # Убираем пробелы и дефисы для стандартизации формата
         self.number = re.sub(r"[ \-]", "", self.number)
 
     def save(self, *args, **kwargs):
-        """
-        Проверяет номер телефона перед сохранением.
-        """
         self.clean()
         super().save(*args, **kwargs)
