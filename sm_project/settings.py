@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'trucks',
     "simple_history",
     'import_export',
+    'qr_handler',
 ]
 
 MIDDLEWARE = [

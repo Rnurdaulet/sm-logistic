@@ -188,14 +188,6 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
             )
             for route, field, title in custom_filter_routes
         ]
-        # Добавляем кастомную страницу
-        custom_urls += [
-            path(
-                "add-orders-to-shelf/",
-                AddOrdersToShelfView.as_view(model_admin=self),
-                name="add_orders_to_shelf",
-            ),
-        ]
 
         return custom_urls + super().get_urls()
 
@@ -379,27 +371,3 @@ def link_callback(uri, rel):
 
     print(path)
     return path
-
-
-
-
-class AddOrdersToShelfView(UnfoldModelAdminViewMixin, TemplateView):
-    title = "Добавить заказы на полку"  # Заголовок страницы
-    permission_required = ()  # Права доступа
-    template_name = "admin/add_orders_to_shelf.html"  # Шаблон для страницы
-
-    def post(self, request, *args, **kwargs):
-        """Обработка POST-запроса."""
-        order_numbers = request.POST.get("order_numbers", "").split(",")
-        shelf_unique_id = request.POST.get("shelf_unique_id", "").strip()
-
-        try:
-            result = OrderShelfService.add_orders_to_shelf(
-                order_numbers=order_numbers,
-                shelf_unique_id=shelf_unique_id
-            )
-            messages.success(request, result)
-        except ValueError as e:
-            messages.error(request, str(e))
-
-        return self.render_to_response(self.get_context_data(request=request))
