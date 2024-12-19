@@ -15,7 +15,6 @@ class OrderResource(resources.ModelResource):
             return order.receiver.get_phone_numbers()
         return "Нет номеров"
 
-    formatted_date = fields.Field(column_name="Дата")
 
     def dehydrate_date(self, order):
         """
