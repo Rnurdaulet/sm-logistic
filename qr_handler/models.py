@@ -12,3 +12,4 @@ class DummyModel(models.Model):
 
     def __str__(self):
         return self.name or "Фиктивный объект"
+
