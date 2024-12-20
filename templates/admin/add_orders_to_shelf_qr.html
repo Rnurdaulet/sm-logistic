@@ -4,7 +4,7 @@
     <div class="max-w-5xl mx-auto mt-8">
         <!-- Карточка -->
         <fieldset
-                class="module shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                class="module shadow-sm rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 mb-3">
             <div class="p-6 space-y-6">
 
                 <!-- Поле сканирования QR-кода -->
@@ -13,7 +13,7 @@
                         Сканирование QR-кода
                     </label>
                     <div id="my-qr-reader"
-                         class="w-full bg-gray-50 dark:bg-gray-800 rounded-md shadow-sm border border-gray-300 dark:border-gray-700">
+                         class="w-full">
 
                         <!-- Кнопки управления -->
                         <div class="mt-4 flex items-center justify-between">
@@ -21,14 +21,14 @@
                             <div class="flex items-center gap-2">
                                 <span id="cam-has-flash" class="text-sm text-gray-600 dark:text-gray-300">-</span>
                                 <button id="flash-toggle" type="button"
-                                        class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
                                     📸 Включить/выключить
                                 </button>
                             </div>
 
                             <!-- Настройки -->
                             <button type="button" id="open-modal"
-                                    class="inline-flex items-center px-4 py-2 bg-primary-600 text-white font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                    class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
                                 ⚙️
                             </button>
                         </div>
@@ -43,8 +43,7 @@
 
                 <!-- Результаты сканирования -->
                 <div class="mt-6 space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                    <p><b>Результат сканирования QR-кода:</b> <span id="cam-qr-result">None</span></p>
-                    <p><b>Последнее сканирование:</b> <span id="cam-qr-result-timestamp">-</span></p>
+                    <p><b>QR-кода:</b> <span id="cam-qr-result">None</span></p>
                 </div>
             </div>
 
@@ -107,26 +106,27 @@
                         </div>
                     {% endif %}
 
-                    <!-- Кнопка отправки -->
-                    <div class="text-right px-3">
-                        <button type="submit"
-                                class="bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-md px-4 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
-                            Отправить
-                        </button>
+
+                    <div class="lg:mb-auto">
+                        <div class="flex  flex-row flex-col gap-4 lg:flex-row">
+                            <button type="submit"
+                                    class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
+                                Отправить
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </fieldset>
     </div>
-    <!-- Фон модального окна -->
     <div id="settings-modal"
-         class="backdrop-blur-sm bg-gray-900 bg-opacity-80 fixed inset-0 z-50 flex items-center justify-center">
+         class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-gray-900 bg-opacity-80">
         <!-- Модальное окно -->
-        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-lg w-full max-w-md p-6 space-y-6">
+        <div class="p-6 space-y-6 bg-white rounded-lg shadow-lg max-w-sm sm:max-w-md dark:bg-gray-900 rounded-md shadow-sm w-80">
             <!-- Иконка -->
-            <div class="flex justify-center">
-                <div class="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
-                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            <div class="flex justify-center mb-6">
+                <div class="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100">
+                    <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                          xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 8c1.2 0 2.3-.9 2.6-2.1M14.7 12H21v5a3 3 0 01-3 3h-4.5"></path>
@@ -187,28 +187,28 @@
             </div>
 
             <!-- Кнопки -->
-            <div class="flex justify-center space-x-4">
+            <div class="flex flex-row flex-col gap-4 lg:flex-row mt-3">
                 <button id="start-button"
-                        class="px-4 py-2 bg-green-600 text-white font-medium rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
                     Начать
                 </button>
                 <button id="stop-button"
-                        class="px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-md shadow-sm bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
                     Остановить
                 </button>
             </div>
 
             <!-- Закрытие -->
-            <div class="text-center">
+            <div class="text-center mt-3">
                 <button id="close-modal"
-                        class="px-4 py-2 bg-primary-600 text-white font-medium rounded-md shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
                     Закрыть
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Фон модального окна -->
+
     <!-- Фон модального окна -->
     <div id="modal-alert"
          class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-gray-900 bg-opacity-80">
@@ -239,14 +239,14 @@
                 так.</p>
 
             <!-- Кнопки -->
-            <div class="flex justify-center space-x-4">
-                <button id="modal-cancel"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    Отмена
-                </button>
+            <div class="flex flex-row flex-col gap-4 lg:flex-row mt-3">
                 <button id="modal-action-add"
-                        class="px-4 py-2 ml-2 bg-primary-600 hover:bg-primary-700 text-white  rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
                     Добавить
+                </button>
+                <button id="modal-cancel"
+                        class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
+                    Отмена
                 </button>
             </div>
         </div>
@@ -256,10 +256,10 @@
 
 
 
-    <!-- Tagify CSS -->
+    <!-- Tagify -->
     <link rel="stylesheet" href="{% static '/admin/css/tagify.css' %}">
-    <!-- Tagify JS -->
     <script src="{% static '/admin/js/tagify.js' %}"></script>
+
     <script type="module">
         import QrScanner from "{% static 'admin/js/qr-scanner.min.js' %}";
 
