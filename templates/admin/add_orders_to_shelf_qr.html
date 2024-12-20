@@ -16,7 +16,7 @@
                          class="w-full">
 
                         <!-- Кнопки управления -->
-                        <div class="mt-4 flex items-center justify-between">
+                        <div class="mt-4 mb-4 flex items-center justify-between">
                             <!-- Фонарик -->
                             <div class="flex items-center gap-2">
                                 <span id="cam-has-flash" class="text-sm text-gray-600 dark:text-gray-300">-</span>
@@ -43,11 +43,11 @@
 
                 <!-- Результаты сканирования -->
                 <div class="mt-6 space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                    <p><b>QR-кода:</b> <span id="cam-qr-result">None</span></p>
+                    <span id="cam-qr-result">None</span>
                 </div>
             </div>
 
-            <div class="aligned border border-gray-200 rounded-md pt-3 px-3 shadow-sm dark:border-gray-800">
+            <div class="aligned  pt-3 px-3 shadow-sm dark:border-gray-800">
                 <form method="post" class="space-y-6">
                     {% csrf_token %}
 
@@ -90,21 +90,21 @@
                         </div>
                     </div>
 
-                    <!-- Сообщения -->
-                    {% if messages %}
-                        <div class="space-y-2 px-3">
-                            {% for message in messages %}
-                                <div class="rounded-md p-4
-                            {% if message.tags == 'success' %}
-                                bg-green-50 border-l-4 border-green-400 text-green-700
-                            {% elif message.tags == 'error' %}
-                                bg-red-50 border-l-4 border-red-400 text-red-700
-                            {% endif %}">
-                                    <p class="text-sm">{{ message }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                    {#                    <!-- Сообщения -->#}
+                    {#                    {% if messages %}#}
+                    {#                        <div class="space-y-2 px-3">#}
+                    {#                            {% for message in messages %}#}
+                    {#                                <div class="rounded-md p-4#}
+                    {#                            {% if message.tags == 'success' %}#}
+                    {#                                bg-green-50 border-l-4 border-green-400 text-green-700#}
+                    {#                            {% elif message.tags == 'error' %}#}
+                    {#                                bg-red-50 border-l-4 border-red-400 text-red-700#}
+                    {#                            {% endif %}">#}
+                    {#                                    <p class="text-sm">{{ message }}</p>#}
+                    {#                                </div>#}
+                    {#                            {% endfor %}#}
+                    {#                        </div>#}
+                    {#                    {% endif %}#}
 
 
                     <div class="lg:mb-auto">
@@ -231,7 +231,7 @@
 
             <!-- Текст -->
             <p class="text-sm text-center text-gray-600 dark:text-gray-300 mb-4">
-                Обнаружено: <span id="modal-qr-result" class="font-medium">010101H</span>
+                Обнаружено: <span id="modal-qr-result" class="font-medium"></span>
             </p>
 
             <!-- Сообщение об ошибке -->
@@ -252,6 +252,62 @@
         </div>
     </div>
 
+    <!-- Сообщения -->
+
+    <!-- Фон модального окна -->
+    <div id="modal-messages"
+         class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-gray-900 bg-opacity-80 hidden">
+        {% if messages %}
+            <!-- Модальное окно -->
+            <div class="p-6 space-y-6 bg-white rounded-lg shadow-lg max-w-sm sm:max-w-md dark:bg-gray-900 rounded-md shadow-sm w-80">
+                {% for message in messages %}
+                    {% if message.tags == 'success' %}
+                        <!-- Иконка -->
+                        <div class="flex justify-center mb-6">
+                            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 ">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor" aria-hidden="true" data-slot="icon" class="svg-success">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="m4.5 12.75 6 6 9-13.5"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    {% elif message.tags == 'error' %}
+                        <div class="flex justify-center mb-6">
+                            <div class="flex items-center justify-center w-16 h-16 rounded-full bg-red-100 ">
+                                <svg class="size-6 text-red-600 svg-error" fill="none" viewBox="0 0 24 24"
+                                     stroke-width="1.5"
+                                     stroke="currentColor" aria-hidden="true" data-slot="icon">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                          d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Заголовок -->
+                    <h3 class="text-lg font-semibold text-center text-gray-800 dark:text-gray-200 mb-4">
+                        Внимание
+                    </h3>
+                    <!-- Текст -->
+                    <p class="text-sm text-center text-gray-600 dark:text-gray-300 mb-4">
+                        {{ message }}
+                    </p>
+                {% endfor %}
+
+                <!-- Кнопки -->
+                <div class="flex flex-row flex-col gap-4 lg:flex-row mt-3">
+                    <button id="modal-messages-cancel"
+                            class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
+                        Закрыть
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+
 
 
 
@@ -261,6 +317,22 @@
     <script src="{% static '/admin/js/tagify.js' %}"></script>
 
     <script type="module">
+        const modalMessages = document.getElementById('modal-messages');
+        const closeModalMessagesButton = document.getElementById('modal-messages-cancel');
+
+
+        if (closeModalMessagesButton && modalMessages) {
+            closeModalMessagesButton.addEventListener('click', () => {
+                modalMessages.classList.add('hidden');
+            });
+        }
+        {% if messages %}
+            modalMessages.classList.remove("hidden");
+        {% else %}
+            modalMessages.classList.add("hidden");
+        {% endif %}
+
+
         import QrScanner from "{% static 'admin/js/qr-scanner.min.js' %}";
 
         // Элементы управления
@@ -458,7 +530,7 @@
 
         .svg-error {
             width: 2.5rem;
-            color: oklch(0.627 0.194 149.214);
+            color: oklch(0.577 0.245 27.325);
         }
 
 
