@@ -47,73 +47,25 @@
                 </div>
             </div>
 
-            <div class="aligned  pt-3 px-3 shadow-sm dark:border-gray-800">
-                <form method="post" class="space-y-6">
+            <div class=" module aligned pt-3 px-3 shadow-sm dark:border-gray-800">
+                <form id="input_form" method="post" class="space-y-6">
                     {% csrf_token %}
 
-                    <!-- Поле ввода номеров заказов -->
-                    <div class="form-row border-b border-gray-200 -mx-3 px-3 pt-3 first:pt-0 last:border-b-0 dark:border-gray-800">
-                        <div class="flex group field-row mb-3 flex-col lg:flex-row lg:gap-2">
-                            <div class="lg:min-w-48 lg:mt-2 lg:w-48">
-                                <label for="order_numbers"
-                                       class="block font-semibold mb-2 text-font-important-light text-sm dark:text-font-important-dark">
-                                    Номера заказов (теги):
-                                </label>
-                            </div>
-                            <div class="flex-grow">
-                                <input
-                                        id="order_numbers"
-                                        name="order_numbers"
-                                        class="border bg-white font-medium rounded-md shadow-sm text-font-default-light text-sm focus:ring focus:ring-primary-300 focus:border-primary-600 dark:bg-gray-900 dark:border-gray-700 dark:text-font-default-dark dark:focus:border-primary-600 dark:focus:ring-primary-700 px-3 py-2 w-full max-w-4xl"
-                                        placeholder="Введите номера заказов">
-                            </div>
-                        </div>
+                    <div class="form-row border-b border-gray-200 -mx-3 px-3 pt-3 first:pt-0 dark:border-gray-800 last:border-b-0">
+                        <label for="input_field"
+                               class="block font-semibold mb-2 text-font-important-light text-sm dark:text-font-important-dark required">Ввести
+                            вручную QR-ID </label>
+                        <input type="text" id="input_field" name="input_field"
+                               class="border bg-white font-medium min-w-20 rounded-md shadow-sm text-font-default-light text-sm focus:ring focus:ring-primary-300 focus:border-primary-600 focus:outline-none group-[.errors]:border-red-600 group-[.errors]:focus:ring-red-200 dark:bg-gray-900 dark:border-gray-700 dark:text-font-default-dark dark:focus:border-primary-600 dark:focus:ring-primary-700 dark:focus:ring-opacity-50 dark:group-[.errors]:border-red-500 dark:group-[.errors]:focus:ring-red-600/40 px-3 py-2 w-full max-w-2xl"
+                               placeholder="Например O171224-0011 или W010105C">
                     </div>
 
 
-                    <!-- Поле ввода уникального ID полки -->
-                    <div class="form-row border-b border-gray-200 -mx-3 px-3 pt-3 first:pt-0 last:border-b-0 dark:border-gray-800">
-                        <div class="flex group field-row mb-3 flex-col lg:flex-row lg:gap-2">
-                            <div class="lg:min-w-48 lg:mt-2 lg:w-48">
-                                <label for="shelf_unique_id"
-                                       class="block font-semibold mb-2 text-font-important-light text-sm dark:text-font-important-dark">
-                                    Уникальный ID полки:
-                                </label>
-                            </div>
-                            <div class="flex-grow">
-                                <input
-                                        id="shelf_unique_id"
-                                        name="shelf_unique_id"
-                                        type="text"
-                                        class="border bg-white font-medium rounded-md shadow-sm text-font-default-light text-sm focus:ring focus:ring-primary-300 focus:border-primary-600 dark:bg-gray-900 dark:border-gray-700 dark:text-font-default-dark dark:focus:border-primary-600 dark:focus:ring-primary-700 px-3 py-2 w-full max-w-4xl">
-                            </div>
-                        </div>
-                    </div>
-
-                    {#                    <!-- Сообщения -->#}
-                    {#                    {% if messages %}#}
-                    {#                        <div class="space-y-2 px-3">#}
-                    {#                            {% for message in messages %}#}
-                    {#                                <div class="rounded-md p-4#}
-                    {#                            {% if message.tags == 'success' %}#}
-                    {#                                bg-green-50 border-l-4 border-green-400 text-green-700#}
-                    {#                            {% elif message.tags == 'error' %}#}
-                    {#                                bg-red-50 border-l-4 border-red-400 text-red-700#}
-                    {#                            {% endif %}">#}
-                    {#                                    <p class="text-sm">{{ message }}</p>#}
-                    {#                                </div>#}
-                    {#                            {% endfor %}#}
-                    {#                        </div>#}
-                    {#                    {% endif %}#}
-
-
-                    <div class="lg:mb-auto">
-                        <div class="flex  flex-row flex-col gap-4 lg:flex-row">
-                            <button type="submit"
-                                    class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
-                                Отправить
-                            </button>
-                        </div>
+                    <div class="container flex flex-col-reverse gap-3 items-center mx-auto mt-6 mb-6 lg:flex-row-reverse">
+                        <button type="submit"
+                                class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
+                            Перейти
+                        </button>
                     </div>
                 </form>
             </div>
@@ -207,9 +159,6 @@
             </div>
         </div>
     </div>
-
-
-    <!-- Фон модального окна -->
     <div id="modal-alert"
          class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-gray-900 bg-opacity-80 hidden">
         <!-- Модальное окно -->
@@ -252,7 +201,7 @@
             <div class="flex flex-row flex-col gap-4 lg:flex-row mt-3">
                 <button id="modal-action-add"
                         class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-primary-600 border-transparent text-white">
-                    Добавить
+                    Перейти
                 </button>
                 <button id="modal-cancel"
                         class="border font-medium px-3 py-2 rounded-md text-center whitespace-nowrap bg-white dark:border-gray-700 dark:bg-transparent dark:text-white">
@@ -261,10 +210,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Сообщения -->
-
-    <!-- Фон модального окна -->
     <div id="modal-messages"
          class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-gray-900 bg-opacity-80 hidden">
         {% if messages %}
@@ -317,10 +262,6 @@
         {% endif %}
     </div>
 
-    <!-- Tagify -->
-    <link rel="stylesheet" href="{% static '/admin/css/tagify.css' %}">
-    <script src="{% static '/admin/js/tagify.js' %}"></script>
-
     <script type="module">
         const modalMessages = document.getElementById('modal-messages');
         const closeModalMessagesButton = document.getElementById('modal-messages-cancel');
@@ -357,51 +298,18 @@
             const modalQrResult = alertModal.querySelector("#modal-qr-result");
             const errorMessage = alertModal.querySelector("#modal-error-message");
             const addButton = alertModal.querySelector("#modal-action-add");
-
             const success_icon = alertModal.querySelector("#modal-alert-success-icon");
             const error_icon = alertModal.querySelector("#modal-alert-error-icon");
+            const input_field = document.getElementById('input_field');
+            const input_form = document.getElementById('input_form');
 
-            // Инициализация Tagify
-            const initializeTagify = () => {
-                const orderInput = document.querySelector("#order_numbers");
-                const shelfInput = document.querySelector("#shelf_unique_id");
-
-                if (orderInput) {
-                    orderInput._tagify = new Tagify(orderInput, {
-                        whitelist: [],
-                        dropdown: {
-                            maxItems: 10,
-                            enabled: 0,
-                            closeOnSelect: false,
-                        },
-                        delimiters: ", ",
-                    });
-                }
-
-                if (shelfInput) {
-                    shelfInput._tagify = new Tagify(shelfInput, {
-                        maxTags: 1,
-                        enforceWhitelist: false,
-                        dropdown: {
-                            enabled: 0,
-                        },
-                    });
-                }
-            };
-
-            // Обновление состояния вспышки
-            const updateFlashAvailability = (scanner) => {
-                scanner.hasFlash().then(hasFlash => {
-                    flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
-                });
-            };
 
             // Установка результата сканирования
             const setResult = (result) => {
                 console.log(result.data);
 
                 const qrValueRaw = result.data.trim();
-                const qrValue = qrValueRaw.slice(1); // Удаляем первый символ (W или O)
+                const qrValue = qrValueRaw;
                 const isOrder = qrValueRaw.startsWith("O");
                 const isShelf = qrValueRaw.startsWith("W");
 
@@ -413,6 +321,7 @@
                     addButton.dataset.qrType = isOrder ? "order" : "shelf";
                     errorMessage.classList.add("hidden");
                     error_icon.classList.add("hidden");
+                    success_icon.classList.remove("hidden");
                     addButton.classList.remove("hidden");
 
                     // Показываем модальное окно
@@ -437,34 +346,8 @@
                 const qrValue = modalQrResult.textContent.trim();
                 const qrType = addButton.dataset.qrType;
 
-                if (qrType === "order") {
-                    const orderInput = document.querySelector("#order_numbers");
-                    if (orderInput && orderInput._tagify) {
-                        const existingTags = orderInput._tagify.value.map(tag => tag.value);
-                        if (existingTags.includes(qrValue)) {
-                            errorMessage.textContent = "Этот заказ уже добавлен.";
-                            errorMessage.classList.remove("hidden");
-                            addButton.classList.add("hidden");
-                            return;
-                        }
-                        orderInput._tagify.addTags([qrValue]);
-                    } else {
-                        console.error("Tagify для order_numbers не инициализирован.");
-                    }
-                } else if (qrType === "shelf") {
-                    const shelfInput = document.querySelector("#shelf_unique_id");
-                    if (shelfInput && shelfInput._tagify) {
-                        if (!shelfInput.value) {
-                            shelfInput._tagify.addTags([qrValue]);
-                        } else if (confirm("Полка уже выбрана. Заменить на новую?")) {
-                            shelfInput._tagify.removeAllTags();
-                            shelfInput._tagify.addTags([qrValue]);
-                        }
-                    } else {
-                        console.error("Tagify для shelf_unique_id не инициализирован.");
-                    }
-                }
-
+                input_field.value = qrValue;
+                input_form.submit();
                 alertModal.classList.add("hidden");
                 scanner.start();
             };
@@ -514,6 +397,13 @@
             document.getElementById('start-button').addEventListener('click', () => scanner.start());
             document.getElementById('stop-button').addEventListener('click', () => scanner.stop());
 
+
+            // Обновление состояния вспышки
+            const updateFlashAvailability = (scanner) => {
+                scanner.hasFlash().then(hasFlash => {
+                    flashToggle.style.display = hasFlash ? 'inline-block' : 'none';
+                });
+            };
             document.getElementById('scan-region-highlight-style-select').addEventListener('change', e => {
                 videoContainer.className = e.target.value;
                 scanner._updateOverlay();
@@ -533,13 +423,10 @@
                 });
             });
 
-            // Инициализация
-            initializeTagify();
         });
 
 
     </script>
-
 
     <style>
         .svg-success {

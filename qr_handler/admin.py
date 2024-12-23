@@ -1,12 +1,51 @@
 import json
 
 from django.contrib import admin, messages
+from django.shortcuts import redirect, get_object_or_404
 from django.urls import path
 from unfold.views import UnfoldModelAdminViewMixin
 from django.views.generic import TemplateView
+
+from orders.models import Order
+from warehouse.models import Shelf
 from .models import DummyModel
 from orders.services import OrderShelfService
 
+class InfoOfViewQR(UnfoldModelAdminViewMixin, TemplateView):
+    title = "Информация по QR"
+    permission_required = ()
+    template_name = "admin/info_qr.html"
+
+    def post(self, request, *args, **kwargs):
+        # Получаем значение из формы
+        input_value = request.POST.get("input_field", "").strip()
+
+        if input_value.startswith("O"):
+            # Если начинается на 'O', ищем Order по номеру заказа
+            order_number = input_value[1:]  # Убираем первую букву
+            try:
+                order = get_object_or_404(Order, order_number=order_number)
+                redirect_url = f"/admin/orders/order/{order.id}/change/"
+                return redirect(redirect_url)
+            except Exception as e:
+                messages.error(request, f"Не удалось найти заказ с номером {order_number}.")
+                return self.render_to_response(self.get_context_data(request=request))
+
+        elif input_value.startswith("W"):
+            # Если начинается на 'W', ищем Shelf по уникальному ID
+            shelf_unique_id = input_value[1:]  # Убираем первую букву
+            try:
+                shelf = get_object_or_404(Shelf, unique_id=shelf_unique_id)
+                redirect_url = f"/admin/warehouse/shelf/{shelf.id}/change/"
+                return redirect(redirect_url)
+            except Exception as e:
+                messages.error(request, f"Не удалось найти полку с ID {shelf_unique_id}.")
+                return self.render_to_response(self.get_context_data(request=request))
+
+        else:
+            # Если значение некорректное
+            messages.error(request, "Введите значение, начинающееся с 'O' или 'W'.")
+            return self.render_to_response(self.get_context_data(request=request))
 
 class AddOrdersToShelfViewQR(UnfoldModelAdminViewMixin, TemplateView):
     title = "Добавить заказы на полку"
@@ -77,6 +116,11 @@ class DummyModelAdmin(admin.ModelAdmin):
                 "add-orders-to-shelf-qr/",
                 AddOrdersToShelfViewQR.as_view(model_admin=self),  # Передаём model_admin
                 name="add_orders_to_shelf_qr",
+            ),
+            path(
+                "info-qr/",
+                InfoOfViewQR.as_view(model_admin=self),  # Передаём model_admin
+                name="info_qr",
             ),
         ]
         return custom_urls + super().get_urls()
