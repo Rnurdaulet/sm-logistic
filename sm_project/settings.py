@@ -269,4 +269,105 @@ UNFOLD = {
             ],
         },
     ],
+
+    "SIDEBAR": {
+        "show_all_applications": True,
+        "navigation": [
+            {
+                "title": _("Меню"),
+                "items": [
+                    {
+                        "title": _("Главная"),
+                        "icon": "dashboard",
+                        "link": reverse_lazy("admin:index"),
+                    },
+                    {
+                        "title": _("Заказы"),
+                        "icon": "list_alt",
+                        "link": reverse_lazy("admin:orders_order_changelist"),
+                    },
+                    {
+                        "title": _("Клиенты"),
+                        "icon": "badge",
+                        "link": reverse_lazy("admin:crm_client_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Фуры и Маршруты"),
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": _("Маршруты"),
+                        "icon": "route",
+                        "link": reverse_lazy("admin:trucks_route_changelist"),
+                    },
+                    {
+                        "title": _("Фуры"),
+                        "icon": "local_shipping",
+                        "link": reverse_lazy("admin:trucks_truck_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Хранение"),
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": _("Полки"),
+                        "icon": "shelves",
+                        "link": reverse_lazy("admin:warehouse_shelf_changelist"),
+                    },
+                    {
+                        "title": _("Секторы"),
+                        "icon": "shelf_position",
+                        "link": reverse_lazy("admin:warehouse_sector_changelist"),
+                    },
+                    {
+                        "title": _("Области"),
+                        "icon": "view_comfy_alt",
+                        "link": reverse_lazy("admin:warehouse_area_changelist"),
+                    },
+                    {
+                        "title": _("Склады"),
+                        "icon": "warehouse",
+                        "link": reverse_lazy("admin:warehouse_warehouse_changelist"),
+                    },
+
+                ],
+            },
+            {
+                "title": _("QR"),
+                "collapsible": False,
+                "items": [
+                    {
+                        "title": _("Добавить на полку"),
+                        "icon": "qr_code_2_add",
+                        "link": reverse_lazy("admin:add_orders_to_shelf_qr"),
+                    },
+                    {
+                        "title": _("Информация по QR"),
+                        "icon": "qr_code_2",
+                        "link": reverse_lazy("admin:info_qr"),
+                    },
+                ],
+            },
+            {
+                "title": _("Юзеры и Группы"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Юзеры"),
+                        "icon": "person",
+                        "link": reverse_lazy("admin:auth_user_changelist"),
+                    },
+                    {
+                        "title": _("Группы"),
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist"),
+                    },
+                ],
+            },
+        ]
+    },
 }
