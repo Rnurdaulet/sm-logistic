@@ -11,6 +11,7 @@ from warehouse.models import Shelf
 from .models import DummyModel
 from orders.services import OrderShelfService
 
+
 class InfoOfViewQR(UnfoldModelAdminViewMixin, TemplateView):
     title = "Информация по QR"
     permission_required = ()
@@ -46,6 +47,7 @@ class InfoOfViewQR(UnfoldModelAdminViewMixin, TemplateView):
             # Если значение некорректное
             messages.error(request, "Введите значение, начинающееся с 'O' или 'W'.")
             return self.render_to_response(self.get_context_data(request=request))
+
 
 class AddOrdersToShelfViewQR(UnfoldModelAdminViewMixin, TemplateView):
     title = "Добавить заказы на полку"
@@ -108,6 +110,7 @@ class AddOrdersToShelfViewQR(UnfoldModelAdminViewMixin, TemplateView):
             messages.error(request, "Произошла непредвиденная ошибка при добавлении заказов.")
 
         return self.render_to_response(self.get_context_data(request=request))
+
 
 class DummyModelAdmin(admin.ModelAdmin):
     def get_urls(self):
