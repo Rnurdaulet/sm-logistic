@@ -111,7 +111,8 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
         'sender__phone_numbers__number',
         'receiver__full_name',
         'receiver__phone_numbers__number',
-        'route__unique_number'
+        'route__unique_number',
+        'shelf__unique_id',
     )
 
     def get_queryset(self, request):

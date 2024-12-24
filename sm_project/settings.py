@@ -266,6 +266,11 @@ UNFOLD = {
                     "icon": "cancel",
                     "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=canceled",
                 },
+                {
+                    "title": _("Возврат"),
+                    "icon": "keyboard_return",
+                    "link": lambda request: f"{reverse_lazy('admin:orders_order_changelist')}?status=return",
+                },
             ],
         },
     ],
