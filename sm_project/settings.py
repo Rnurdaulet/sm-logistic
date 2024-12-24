@@ -151,7 +151,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),  # Дополнительные папки с файлами
 ]
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Путь для сбора файлов (например, для продакшена)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Путь для сбора файлов (например, для продакшена)
 
 # MEDIA (для загруженных пользователем файлов)
 MEDIA_URL = '/media/'
