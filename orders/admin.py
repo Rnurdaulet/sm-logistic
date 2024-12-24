@@ -252,6 +252,7 @@ class OrderAdmin(ModelAdmin, SimpleHistoryAdmin):
             'in_warehouse': ("#555e6c; color: white;", "warehouse"),
             'completed': ("#88d0a0; color: black;", "check_circle"),
             'canceled': ("#bf616a; color: white;", "cancel"),
+            'return': ("#ff9900; color: white;", "keyboard_return"),
         }
 
         # Кэшируем выборку статусов для оптимизации

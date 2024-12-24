@@ -17,6 +17,7 @@ class Order(models.Model):
         ('in_warehouse', 'На складе'),
         ('completed', 'Выдан'),
         ('canceled', 'Отменён'),
+        ('return', 'Возврат'),
     ]
 
     order_number = models.CharField("Номер заказа", max_length=20, unique=True, editable=False)
