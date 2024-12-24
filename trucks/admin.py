@@ -13,13 +13,13 @@ from django.utils.html import format_html
 @admin.register(Route)
 class RouteAdmin(ModelAdmin):  # Используем Unfold ModelAdmin
     list_display = ('truck', 'unique_number', 'view_orders_button', 'display_status', 'created_at',)
-    list_filter = ('status', 'created_at', 'updated_at', 'truck')
+    list_filter = ('status', 'truck', 'created_at', 'updated_at')
     search_fields = ('truck__name', 'unique_number')
     ordering = ('-created_at',)  # Сортировка по умолчанию
-    readonly_fields = ('created_at', 'updated_at', 'unique_number')  # Поля только для чтения
+    readonly_fields = ('unique_number', 'created_at', 'updated_at')  # Поля только для чтения
     form_layout = [  # Определяем макет формы для Unfold
         ('Основная информация', {
-            'fields': ['truck', 'status', 'unique_number', 'created_at', 'updated_at']
+            'fields': ['unique_number', 'truck', 'status', 'created_at', 'updated_at']
         }),
     ]
     compressed_fields = True  # Сжатый режим полей
