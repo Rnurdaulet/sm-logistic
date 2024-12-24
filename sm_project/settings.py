@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "simple_history",
     'import_export',
     'qr_handler',
+    'orders.templatetags',
 ]
 
 MIDDLEWARE = [
@@ -215,6 +216,7 @@ UNFOLD = {
     "SITE_HEADER": "Saule-Marat",
     "SITE_TITLE": "Saule-Marat",
     "SITE_SYMBOL": "local_shipping",
+    "DASHBOARD_CALLBACK": "qr_handler.utils.dashboard_callback",
     "SHOW_HISTORY": True,
     "LOGIN": {
         "image": lambda request: static("admin/images/login-bg.jpg"),
