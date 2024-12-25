@@ -28,7 +28,7 @@ SECRET_KEY = 'django-insecure-3r!_q*1nghu80_fqu=kq@a1!dkl*(bbpl1qqujfo&_2ffcg5&m
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["127.0.0.1", '10.0.2.2', ]
+ALLOWED_HOSTS = ['sme.kz','www.sme.kz','185.129.49.151','localhost']
 
 
 def show_toolbar(request):
